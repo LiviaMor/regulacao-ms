@@ -1,275 +1,334 @@
-# Sistema de Regulação Autônoma SES-GO
+# 🏥 Sistema de Regulação Autônoma SES-GO
+### Solução de Inteligência Artificial para Otimização da Regulação Médica
 
-Sistema inteligente de regulação médica para a Secretaria de Estado da Saúde de Goiás, utilizando IA para otimizar o processo de alocação de leitos e transferência de pacientes.
+<div align="center">
 
-## 🏗️ Arquitetura
+![SES-GO](https://img.shields.io/badge/SES--GO-Sistema%20de%20Regulação-blue?style=for-the-badge)
+![IA](https://img.shields.io/badge/IA-BioBERT%20%2B%20Llama3-green?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Apresentação%20ABERTO%20IA-orange?style=for-the-badge)
 
-### Backend (Microserviços)
-- **MS-Ingestion**: Scraper do Pentaho + API de dados públicos
-- **MS-Intelligence**: BioBERT + Llama para análise de prontuários
-- **MS-Logistics**: Autenticação JWT + Gerenciamento de estados
+</div>
 
-### Frontend
-- **React Native + Expo**: App único para Web/Mobile
-- **Dashboard Público**: Mapa de calor de leitos em tempo real
-- **Área Hospitalar**: Upload de prontuários e solicitações
+---
 
-## 🚀 Início Rápido
+## 🎯 **Apresentação para o ABERTO de IA de Goiás**
 
-### ✅ Pré-requisitos
-- Python 3.8+
-- Node.js 16+ (para React Native)
-- PostgreSQL 15+ (será instalado automaticamente)
+Este sistema representa uma **solução inovadora de Inteligência Artificial** desenvolvida para revolucionar o processo de regulação médica da **Secretaria de Estado da Saúde de Goiás (SES-GO)**. 
 
-### 🎯 Instalação Completa (Recomendado)
+### 🚀 **Problema Resolvido**
+- **Agilidade**: Redução do tempo de análise de prontuários de horas para minutos
+- **Precisão**: IA especializada em análise médica com BioBERT + Llama3
+- **Transparência**: Dashboard público em tempo real da situação hospitalar
+- **Eficiência**: Automatização do fluxo de regulação com validação humana
 
+### 💡 **Inovação Tecnológica**
+Sistema pioneiro que combina **processamento de linguagem natural médica** com **análise preditiva** para apoiar decisões críticas de regulação hospitalar, mantendo o regulador humano no centro do processo decisório.
+
+---
+
+## 🏗️ **Arquitetura da Solução**
+
+### 🔬 **Inteligência Artificial**
+- **BioBERT**: Modelo especializado em textos médicos para extração de entidades clínicas
+- **Llama3**: LLM para análise contextual e geração de recomendações estruturadas
+- **Prompt Engineering**: Templates otimizados para decisões de regulação médica
+- **Validação Humana**: Interface intuitiva para aprovação/ajuste das decisões da IA
+
+### 🏢 **Backend - Microserviços**
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   MS-Ingestion  │    │ MS-Intelligence │    │  MS-Logistics   │
+│                 │    │                 │    │                 │
+│ • Scraper SES-GO│    │ • BioBERT       │    │ • Auth JWT      │
+│ • API Pentaho   │    │ • Llama3        │    │ • Workflows     │
+│ • Dashboard     │    │ • OCR Futuro    │    │ • Transferências│
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### 📱 **Frontend - Multiplataforma**
+- **React Native + Expo**: Código único para Web, iOS e Android
+- **Dashboard Público**: Transparência total da situação hospitalar
+- **Área Hospitalar**: Interface para solicitações e upload de prontuários
+- **Área do Regulador**: Fila inteligente com sugestões da IA
+
+---
+
+## 🛠️ **Stack Tecnológica**
+
+### **Backend**
+- **Python 3.11+** - Linguagem principal
+- **FastAPI** - Framework web moderno e performático
+- **SQLAlchemy** - ORM para banco de dados
+- **PostgreSQL/SQLite** - Banco de dados relacional
+- **Redis** - Cache e filas assíncronas
+- **Celery** - Processamento assíncrono
+- **Docker** - Containerização e deploy
+
+### **Inteligência Artificial**
+- **Transformers (HuggingFace)** - BioBERT para NLP médico
+- **Ollama** - Servidor local para Llama3
+- **PyTorch** - Framework de deep learning
+- **Pandas/NumPy** - Processamento de dados
+
+### **Frontend**
+- **React Native** - Framework mobile multiplataforma
+- **Expo** - Plataforma de desenvolvimento
+- **TypeScript** - Tipagem estática
+- **React Navigation** - Navegação entre telas
+
+### **DevOps & Infraestrutura**
+- **Docker Compose** - Orquestração de containers
+- **Nginx** - Load balancer e proxy reverso
+- **GitHub Actions** - CI/CD (futuro)
+- **Monitoring** - Health checks e métricas
+
+---
+
+## 🚀 **Como Executar a Aplicação**
+
+### **📋 Pré-requisitos**
 ```bash
-# 1. Clone o repositório
-git clone <seu-repositorio>
-cd regulacao-microservicos
+# Verificar versões
+python --version  # >= 3.8
+node --version    # >= 16
+npm --version     # >= 8
+```
 
-# 2. Instale dependências Python
+### **⚡ Instalação Rápida (Desenvolvimento)**
+
+#### **1. Clone o Repositório**
+```bash
+git clone git@github.com:LiviaMor/regulacao-ms.git
+cd regulacao-ms
+```
+
+#### **2. Instalar Dependências Python**
+```bash
 pip install -r requirements.txt
+```
 
-# 3. Configure PostgreSQL (automático)
-python install_postgresql.py    # Instala PostgreSQL
-python setup_postgresql.py      # Configura banco de dados
+#### **3. Iniciar Backend (Modo Simples)**
+```bash
+# Inicia com SQLite e dados de demonstração
+python start_backend_simple.py
+```
 
-# 4. Inicie o sistema completo
-python start_complete_system.py
-
-# 5. Em outro terminal, inicie o app React Native
+#### **4. Iniciar Frontend**
+```bash
+# Em outro terminal
 cd regulacao-app
 npm install
 npm start
 ```
 
-### ⚡ Início Rápido (Sem PostgreSQL)
-
+#### **5. Testar Integração**
 ```bash
-# Executar apenas com dados JSON (sem banco)
-python backend/main_simple_with_data.py
-
-# Testar
-python test_dashboard_api.py
+# Verificar se tudo está funcionando
+python test_frontend_backend.py
 ```
 
-## 📊 Endpoints da API
+### **🐳 Instalação Completa (Produção)**
 
-### MS-Ingestion (Porta 8001)
-- `GET /dashboard/leitos` - Dashboard público
-- `GET /pacientes` - Lista de pacientes
-- `POST /sync` - Sincronização manual
-
-### MS-Intelligence (Porta 8002)
-- `POST /processar-regulacao` - Análise com IA
-- `POST /upload-prontuario` - Upload de imagens
-- `GET /historico/{protocolo}` - Histórico de decisões
-
-### MS-Logistics (Porta 8003)
-- `POST /login` - Autenticação
-- `POST /transferencia` - Autorizar transferência
-- `GET /fila-regulacao` - Fila de regulação
-- `GET /dashboard-regulador` - Dashboard do regulador
-
-## 🤖 Fluxo da IA
-
-1. **Extração**: BioBERT processa texto do prontuário
-2. **Contexto**: Sistema busca dados da rede hospitalar
-3. **Decisão**: Llama3 analisa e sugere regulação
-4. **Validação**: Regulador humano valida/ajusta
-5. **Execução**: Sistema atualiza status e notifica
-
-## 🔒 Autenticação
-
-### Usuário Padrão
-- **Email**: admin@sesgo.gov.br
-- **Senha**: admin123
-
-### Tipos de Usuário
-- **ADMIN**: Acesso total
-- **REGULADOR**: Gerenciar regulações
-- **HOSPITAL**: Solicitar regulações
-
-## 📱 Funcionalidades do App
-
-### 🏠 Dashboard Público (Tab 1)
-- **Dados reais da SES-GO** processados de 2.751 registros
-- **Mapa de pressão hospitalar** com 766 pacientes em regulação
-- **Top unidades críticas**: COMPLEXO REGULADOR MUNICIPAL DE GOIANIA (82 pacientes)
-- **Especialidades em demanda**: ORTOPEDIA (205), CLÍNICA MÉDICA (145), CARDIOLOGIA (98)
-- **Atualização automática** a cada 5 minutos
-- **Modo offline** com dados de fallback
-- **Indicadores visuais** de pressão (Verde/Amarelo/Vermelho)
-- **Métricas temporais**: 82 solicitações nas últimas 24h
-
-### 🏥 Área Hospitalar (Tab 2)
-- **Upload de prontuários** via câmera ou galeria
-- **Formulário estruturado** de solicitação
-- **Análise automática com IA** (BioBERT + Llama3)
-- **Resultado visual** com CardDecisaoIA
-- **Login opcional** para autorizar transferências
-
-### 👨‍⚕️ Área do Regulador (Tab 3)
-- **Fila de regulação** em tempo real
-- **Processamento com IA** para cada paciente
-- **Autorização de transferências** com um clique
-- **Dashboard de métricas** e estatísticas
-- **Autenticação JWT** com roles de usuário
-
-### 🤖 CardDecisaoIA - Componente Principal
-```typescript
-// Exibe decisões estruturadas da IA
-<CardDecisaoIA 
-  decisaoIA={resultado}
-  protocolo="PROTO-12345"
-  userToken={token}
-  onTransferenciaAutorizada={callback}
-/>
-```
-
-**Funcionalidades do Card:**
-- 🚨 **Classificação de risco** visual (Vermelho/Amarelo/Verde)
-- 📊 **Score de prioridade** (1-10)
-- 🏥 **Unidade de destino** sugerida pela IA
-- 📋 **Justificativa clínica** detalhada
-- 🚑 **Logística de transporte** (USA/USB/Aéreo)
-- ⏱️ **Previsão de vaga** estimada
-- 🏥 **Protocolos especiais** (UTI/Transplante/Cirurgia)
-- 🔐 **Autorização segura** com JWT
-
-## 🛠️ Desenvolvimento
-
-### Estrutura do Projeto
-```
-├── backend/
-│   ├── shared/           # Modelos compartilhados
-│   ├── ms-ingestion/     # Microserviço de ingestão
-│   ├── ms-intelligence/  # Microserviço de IA
-│   ├── ms-logistics/     # Microserviço de logística
-│   └── docker-compose.yml
-├── regulacao-app/        # App React Native
-└── main.py              # Script original (legacy)
-```
-
-### Variáveis de Ambiente
+#### **1. Docker Compose (Recomendado)**
 ```bash
-# Database
-DATABASE_URL=postgresql://regulacao_user:regulacao_pass@localhost:5432/regulacao_db
-
-# JWT
-JWT_SECRET_KEY=sua_chave_secreta_jwt_aqui
-
-# Ollama
-OLLAMA_URL=http://localhost:11434
-
-# Redis
-REDIS_URL=redis://localhost:6379
-```
-
-### Comandos Úteis
-```bash
-# Ver logs dos serviços
-docker-compose logs -f
-
-# Reiniciar um serviço específico
-docker-compose restart ms-intelligence
-
-# Executar migrações
-docker-compose exec ms-ingestion python -c "from shared.database import create_tables; create_tables()"
-
-# Backup do banco
-docker-compose exec postgres pg_dump -U regulacao_user regulacao_db > backup.sql
-```
-
-## 🧪 Testes
-
-### Backend
-```bash
+# Subir todos os serviços
 cd backend
-pip install pytest httpx
-pytest
+docker-compose up -d
+
+# Verificar status
+docker-compose ps
 ```
 
-### Frontend
+#### **2. Configuração Manual Completa**
 ```bash
-cd regulacao-app
-npm test
+# 1. Instalar PostgreSQL
+python install_postgresql.py
+
+# 2. Configurar banco de dados
+python setup_postgresql.py
+
+# 3. Iniciar sistema completo
+python start_complete_system.py
 ```
-
-## 📈 Monitoramento
-
-### Health Checks
-- MS-Ingestion: http://localhost:8001/health
-- MS-Intelligence: http://localhost:8002/health  
-- MS-Logistics: http://localhost:8003/health
-- Gateway: http://localhost/health
-
-### Métricas
-- Tempo de resposta da IA
-- Taxa de acerto das predições
-- Volume de regulações por hora
-- Disponibilidade dos serviços
-
-## 🔧 Configuração de Produção
-
-### Nginx (Load Balancer)
-```nginx
-upstream backend {
-    server ms-ingestion:8000;
-    server ms-intelligence:8000;
-    server ms-logistics:8000;
-}
-```
-
-### PostgreSQL
-- Configurar backup automático
-- Otimizar índices para consultas frequentes
-- Configurar replicação para alta disponibilidade
-
-### Segurança
-- HTTPS obrigatório
-- Rate limiting
-- Validação de entrada rigorosa
-- Logs de auditoria
-
-## 📚 Documentação Técnica
-
-### Modelo de Dados
-- **PacienteRegulacao**: Dados do paciente e regulação
-- **HistoricoDecisoes**: Histórico de decisões da IA
-- **Usuario**: Usuários do sistema
-
-### Integração SES-GO
-- API CDA do Pentaho
-- Datasets: em_regulacao, admitidos, alta, em_transito
-- Atualização a cada 10 minutos
-
-### IA e Machine Learning
-- **BioBERT**: Extração de entidades médicas
-- **Llama3**: Análise e tomada de decisão
-- **Prompt Engineering**: Templates estruturados
-- **Validação Humana**: Loop de feedback
-
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie uma branch para sua feature
-3. Commit suas mudanças
-4. Push para a branch
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo LICENSE para detalhes.
-
-## 🆘 Suporte
-
-Para suporte técnico:
-- Abra uma issue no GitHub
-- Email: suporte@sesgo.gov.br
-- Documentação: [Wiki do Projeto]
 
 ---
 
-**Desenvolvido com ❤️ para a SES-GO**
+## 📊 **Demonstração da Solução**
+
+### **🔐 Credenciais de Demonstração**
+```
+Email: admin@sesgo.gov.br
+Senha: admin123
+Tipo: ADMIN (acesso completo)
+```
+
+### **🌐 Endpoints Principais**
+- **API Principal**: http://localhost:8000
+- **Documentação**: http://localhost:8000/docs
+- **Dashboard Público**: http://localhost:8000/dashboard/leitos
+- **Health Check**: http://localhost:8000/health
+
+### **📱 Funcionalidades Demonstráveis**
+
+#### **1. Dashboard Público**
+- Visualização em tempo real de **766 pacientes em regulação**
+- **20 unidades hospitalares** monitoradas
+- **Mapa de calor** por especialidade médica
+- Dados reais processados da SES-GO
+
+#### **2. Análise com IA**
+```json
+{
+  "analise_decisoria": {
+    "score_prioridade": 8,
+    "classificacao_risco": "VERMELHO",
+    "unidade_destino_sugerida": "HOSPITAL ESTADUAL DR ALBERTO RASSI",
+    "justificativa_clinica": "Paciente com quadro de IAM necessita UTI cardiológica"
+  },
+  "logistica": {
+    "acionar_ambulancia": true,
+    "tipo_transporte": "USA",
+    "previsao_vaga_h": "2-4 horas"
+  }
+}
+```
+
+#### **3. Interface do Regulador**
+- **CardDecisaoIA**: Componente visual para validação das decisões
+- **Fila inteligente**: Ordenação automática por prioridade
+- **Autorização com um clique**: Workflow otimizado
+
+---
+
+## 📈 **Impacto e Resultados Esperados**
+
+### **⏱️ Redução de Tempo**
+- **Análise de prontuário**: De 30-60 min → 2-5 min
+- **Tomada de decisão**: De 2-4 horas → 15-30 min
+- **Processamento da fila**: Redução de 70% no tempo médio
+
+### **🎯 Melhoria na Precisão**
+- **Padronização**: Critérios uniformes baseados em evidências
+- **Redução de erros**: Validação automática de dados
+- **Rastreabilidade**: Histórico completo de decisões
+
+### **📊 Transparência**
+- **Dashboard público**: Cidadãos podem acompanhar a situação
+- **Métricas em tempo real**: Gestores têm visibilidade total
+- **Relatórios automáticos**: Dados para tomada de decisão estratégica
+
+---
+
+## 🔬 **Detalhes Técnicos da IA**
+
+### **🧠 Processamento de Linguagem Natural**
+```python
+# Exemplo de processamento com BioBERT
+def extrair_entidades_biobert(prontuario_texto: str) -> str:
+    inputs = biobert_tokenizer(prontuario_texto, return_tensors="pt")
+    outputs = biobert_model(**inputs)
+    # Análise de embeddings médicos especializados
+    return analise_clinica_estruturada
+```
+
+### **🤖 Geração de Decisões**
+```python
+# Prompt estruturado para Llama3
+prompt = f"""
+### ESPECIALISTA SÊNIOR DE REGULAÇÃO MÉDICA SES-GO
+Analise o caso e forneça decisão estruturada:
+
+CONTEXTO DO PACIENTE:
+- CID-10: {cid} ({descricao})
+- Quadro Clínico: {biobert_analysis}
+- Disponibilidade da Rede: {dados_rede}
+
+RESPOSTA EM JSON:
+{{
+  "analise_decisoria": {{
+    "score_prioridade": [1-10],
+    "classificacao_risco": "VERMELHO|AMARELO|VERDE",
+    "justificativa_clinica": "Explicação técnica"
+  }}
+}}
+"""
+```
+
+---
+
+## 🎯 **Roadmap e Próximos Passos**
+
+### **📅 Fase 1 - MVP (Atual)**
+- ✅ Backend com microserviços
+- ✅ Frontend multiplataforma
+- ✅ IA básica com BioBERT + Llama3
+- ✅ Dashboard público
+
+### **📅 Fase 2 - Expansão (3-6 meses)**
+- 🔄 OCR para prontuários digitalizados
+- 🔄 Integração com sistemas hospitalares
+- 🔄 Métricas avançadas e relatórios
+- 🔄 App mobile nativo
+
+### **📅 Fase 3 - Inteligência Avançada (6-12 meses)**
+- 🔄 Machine Learning preditivo
+- 🔄 Análise de imagens médicas
+- 🔄 Integração com IoT hospitalar
+- 🔄 IA conversacional para reguladores
+
+---
+
+## 🏆 **Diferenciais Competitivos**
+
+### **🎯 Foco na Saúde Pública**
+- Desenvolvido especificamente para o SUS
+- Dados reais da SES-GO
+- Compliance com regulamentações médicas
+
+### **🤖 IA Especializada**
+- BioBERT treinado em textos médicos
+- Prompts otimizados para regulação
+- Validação humana obrigatória
+
+### **🔓 Código Aberto**
+- Transparência total do algoritmo
+- Possibilidade de auditoria
+- Adaptável para outros estados
+
+### **💰 Custo-Benefício**
+- Infraestrutura local (sem dependência de nuvem)
+- Tecnologias open source
+- ROI mensurável em redução de tempo
+
+---
+
+## 📞 **Contato e Suporte**
+
+### **👩‍💻 Desenvolvedora**
+**Livia Mor**
+- GitHub: [@LiviaMor](https://github.com/LiviaMor)
+- Email: liviamor01@hotmail.com
+- LinkedIn: [Livia Mor](https://linkedin.com/in/liviamor)
+
+### **🏛️ Instituição**
+**Secretaria de Estado da Saúde de Goiás (SES-GO)**
+- Site: https://www.saude.go.gov.br
+- Email: suporte@sesgo.gov.br
+
+### **📚 Documentação**
+- **Repositório**: https://github.com/LiviaMor/regulacao-ms
+- **Wiki**: [Em desenvolvimento]
+- **API Docs**: http://localhost:8000/docs
+
+---
+
+<div align="center">
+
+## 🌟 **Transformando a Saúde Pública com Inteligência Artificial**
+
+*Desenvolvido com ❤️ para o ABERTO de IA de Goiás*
+
+![Goiás](https://img.shields.io/badge/Goiás-Inovação%20em%20Saúde-green?style=for-the-badge)
+![IA](https://img.shields.io/badge/IA-Futuro%20da%20Medicina-blue?style=for-the-badge)
+
+</div>
