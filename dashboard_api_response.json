@@ -1,0 +1,178 @@
+{
+  "status_summary": [
+    {
+      "status": "EM REGULACAO",
+      "count": 766
+    },
+    {
+      "status": "ADMITIDOS",
+      "count": 605
+    },
+    {
+      "status": "ALTA",
+      "count": 891
+    },
+    {
+      "status": "EM TRANSITO",
+      "count": 489
+    }
+  ],
+  "unidades_pressao": [
+    {
+      "unidade_executante_desc": "COMPLEXO REGULADOR MUNICIPAL DE GOIANIA",
+      "cidade": "GOIANIA",
+      "pacientes_em_fila": 82
+    },
+    {
+      "unidade_executante_desc": "CENTRAL DE REGULACAO DE SERVICOS DE SAUDE",
+      "cidade": "APARECIDA DE GOIANIA",
+      "pacientes_em_fila": 59
+    },
+    {
+      "unidade_executante_desc": "UPA III 24H MANSOES ODISSEIA",
+      "cidade": "AGUAS LINDAS DE GOIAS",
+      "pacientes_em_fila": 28
+    },
+    {
+      "unidade_executante_desc": "HOSPITAL ESTADUAL DE FORMOSA DR CESAR SAAD FAYAD",
+      "cidade": "FORMOSA",
+      "pacientes_em_fila": 22
+    },
+    {
+      "unidade_executante_desc": "UPA UNIDADE DE PRONTO ATENDIMENTO DE SENADOR CANEDO",
+      "cidade": "SENADOR CANEDO",
+      "pacientes_em_fila": 19
+    },
+    {
+      "unidade_executante_desc": "HOSPITAL ESTADUAL DE TRINDADE WALDA F DOS SANTOS HETRIN",
+      "cidade": "TRINDADE",
+      "pacientes_em_fila": 16
+    },
+    {
+      "unidade_executante_desc": "HOSPITAL ESTADUAL DE URGENCIAS GOV OTAVIO LAG SIQUEIRA HUGOL",
+      "cidade": "GOIANIA",
+      "pacientes_em_fila": 13
+    },
+    {
+      "unidade_executante_desc": "HOSPITAL ESTADUAL DO CENTRO NORTE GOIANO",
+      "cidade": "URUACU",
+      "pacientes_em_fila": 12
+    },
+    {
+      "unidade_executante_desc": "HOSPITAL ESTADUAL DE ANAPOLIS DR HENRIQUE SANTILLO HEANA",
+      "cidade": "ANAPOLIS",
+      "pacientes_em_fila": 12
+    },
+    {
+      "unidade_executante_desc": "HOSPITAL MUNICIPAL GEORGES HAJJAR",
+      "cidade": "ANAPOLIS",
+      "pacientes_em_fila": 10
+    },
+    {
+      "unidade_executante_desc": "UPA 24 H WASFI JOSE DAHER",
+      "cidade": "CRISTALINA",
+      "pacientes_em_fila": 10
+    },
+    {
+      "unidade_executante_desc": "HOSPITAL MUNICIPAL DE RIO VERDE GOIAS",
+      "cidade": "RIO VERDE",
+      "pacientes_em_fila": 10
+    },
+    {
+      "unidade_executante_desc": "UPA DR JOSE POVOA MENDES",
+      "cidade": "RIO VERDE",
+      "pacientes_em_fila": 9
+    },
+    {
+      "unidade_executante_desc": "HOSPITAL DE URGENCIAS DE GOIAS DR VALDEMIRO CRUZ HUGO",
+      "cidade": "GOIANIA",
+      "pacientes_em_fila": 9
+    },
+    {
+      "unidade_executante_desc": "HOSPITAL MUNICIPAL JOSE INOCENCIO DE OLIVEIRA DE MARA ROSA",
+      "cidade": "MARA ROSA",
+      "pacientes_em_fila": 8
+    },
+    {
+      "unidade_executante_desc": "HOSPITAL MUNICIPAL DE CEZARINA",
+      "cidade": "CEZARINA",
+      "pacientes_em_fila": 8
+    },
+    {
+      "unidade_executante_desc": "HOSPITAL MUNICIPAL DE PIRES DO RIO",
+      "cidade": "PIRES DO RIO",
+      "pacientes_em_fila": 8
+    },
+    {
+      "unidade_executante_desc": "HOSPITAL MUNICIPAL DE PALMEIRAS DE GOIAS",
+      "cidade": "PALMEIRAS DE GOIAS",
+      "pacientes_em_fila": 8
+    },
+    {
+      "unidade_executante_desc": "UPA LAZARO ALBERTO DE MORAES",
+      "cidade": "INHUMAS",
+      "pacientes_em_fila": 8
+    },
+    {
+      "unidade_executante_desc": "HOSPITAL MUNICIPAL DE ITABERAI DR GILBERTO DA SILVA CALDAS",
+      "cidade": "ITABERAI",
+      "pacientes_em_fila": 8
+    }
+  ],
+  "especialidades_demanda": [
+    {
+      "especialidade": "ORTOPEDIA E TRAUMATOLOGIA",
+      "count": 205
+    },
+    {
+      "especialidade": "CLINICA MÉDICA",
+      "count": 145
+    },
+    {
+      "especialidade": "CARDIOLOGIA",
+      "count": 98
+    },
+    {
+      "especialidade": "CIRURGIA VASCULAR",
+      "count": 77
+    },
+    {
+      "especialidade": "CIRURGIA",
+      "count": 45
+    },
+    {
+      "especialidade": "UROLOGIA",
+      "count": 32
+    },
+    {
+      "especialidade": "PSIQUIATRIA",
+      "count": 30
+    },
+    {
+      "especialidade": "NEUROCIRURGIA",
+      "count": 15
+    },
+    {
+      "especialidade": "PEDIATRIA",
+      "count": 14
+    },
+    {
+      "especialidade": "NEUROLOGIA",
+      "count": 13
+    }
+  ],
+  "metricas_tempo": {
+    "solicitacoes_24h": 53,
+    "solicitacoes_7d": 2136,
+    "solicitacoes_30d": 2691,
+    "tendencia": "estável"
+  },
+  "ultima_atualizacao": "2025-12-26T14:52:37.212900",
+  "total_registros": 2751,
+  "data_quality": {
+    "score": 100,
+    "issues": [],
+    "total_records": 2751
+  },
+  "fonte": "json_files_processed"
+}
