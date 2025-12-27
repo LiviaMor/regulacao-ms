@@ -1,28 +1,30 @@
+/**
+ * OCUPAÇÃO DE HOSPITAIS - Dashboard de Leitos
+ * Sistema de Regulação Autônoma SES-GO
+ * 
+ * Exibe ocupação com indicadores de tendência do MS-Ingestao
+ */
+
 import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  Dimensions
+  Dimensions,
 } from 'react-native';
+import { 
+  Colors, 
+  Typography, 
+  BorderRadius, 
+  Shadows, 
+  Spacing,
+  getTrendColor,
+  getOccupancyColor,
+} from '@/constants/theme';
+import HospitalCard, { HospitalData } from './ui/HospitalCard';
 
 const { width } = Dimensions.get('window');
-
-interface Hospital {
-  hospital: string;
-  sigla: string;
-  cidade: string;
-  tipo: string;
-  leitos_totais: number;
-  leitos_ocupados: number;
-  leitos_disponiveis: number;
-  taxa_ocupacao: number;
-  status_ocupacao: 'CRITICO' | 'ALTO' | 'MODERADO' | 'NORMAL';
-  cor_status: string;
-  especialidades: string[];
-  ultima_atualizacao: string;
-}
 
 interface ResumoOcupacao {
   total_leitos: number;
@@ -35,7 +37,7 @@ interface ResumoOcupacao {
 }
 
 interface OcupacaoHospitaisProps {
-  ocupacao_hospitais: Hospital[];
+  ocupacao_hospitais: HospitalData[];
   resumo_ocupacao: ResumoOcupacao;
 }
 
@@ -43,166 +45,93 @@ const OcupacaoHospitais: React.FC<OcupacaoHospitaisProps> = ({
   ocupacao_hospitais, 
   resumo_ocupacao 
 }) => {
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'CRITICO': return 'CRÍTICO';
-      case 'ALTO': return 'ALTO';
-      case 'MODERADO': return 'MODERADO';
-      case 'NORMAL': return 'NORMAL';
-      default: return 'N/A';
-    }
-  };
-
-  const getTipoIcon = (tipo: string) => {
-    switch (tipo) {
-      case 'Urgência': return 'URG';
-      case 'Geral': return 'GER';
-      case 'Materno-Infantil': return 'MAT';
-      case 'Pediátrico': return 'PED';
-      case 'Regional': return 'REG';
-      default: return 'HOS';
-    }
-  };
-
-  const renderResumoCard = () => (
-    <View style={styles.resumoCard}>
-      <Text style={styles.resumoTitle}>Resumo da Rede Estadual</Text>
-      
-      <View style={styles.resumoGrid}>
-        <View style={styles.resumoItem}>
-          <Text style={styles.resumoNumber}>{resumo_ocupacao.total_leitos}</Text>
-          <Text style={styles.resumoLabel}>Total de Leitos</Text>
-        </View>
-        
-        <View style={styles.resumoItem}>
-          <Text style={[styles.resumoNumber, { color: '#F57C00' }]}>
-            {resumo_ocupacao.total_ocupados}
-          </Text>
-          <Text style={styles.resumoLabel}>Ocupados</Text>
-        </View>
-        
-        <View style={styles.resumoItem}>
-          <Text style={[styles.resumoNumber, { color: '#4CAF50' }]}>
-            {resumo_ocupacao.total_disponiveis}
-          </Text>
-          <Text style={styles.resumoLabel}>Disponíveis</Text>
-        </View>
-        
-        <View style={styles.resumoItem}>
-          <Text style={[styles.resumoNumber, { color: '#2196F3' }]}>
-            {resumo_ocupacao.taxa_media}%
-          </Text>
-          <Text style={styles.resumoLabel}>Taxa Média</Text>
-        </View>
-      </View>
-
-      <View style={styles.statusResumo}>
-        <View style={styles.statusItem}>
-          <View style={[styles.statusIndicator, { backgroundColor: '#D32F2F' }]} />
-          <Text style={styles.statusText}>{resumo_ocupacao.hospitais_criticos} Críticos</Text>
-        </View>
-        
-        <View style={styles.statusItem}>
-          <View style={[styles.statusIndicator, { backgroundColor: '#F57C00' }]} />
-          <Text style={styles.statusText}>{resumo_ocupacao.hospitais_alto} Alto</Text>
-        </View>
-        
-        <View style={styles.statusItem}>
-          <View style={[styles.statusIndicator, { backgroundColor: '#4CAF50' }]} />
-          <Text style={styles.statusText}>{resumo_ocupacao.hospitais_normal} Normal</Text>
-        </View>
-      </View>
-    </View>
-  );
-
-  const renderHospitalCard = (hospital: Hospital, index: number) => (
-    <View key={index} style={styles.hospitalCard}>
-      {/* Header do Hospital */}
-      <View style={styles.hospitalHeader}>
-        <View style={styles.hospitalInfo}>
-          <Text style={styles.hospitalNome} numberOfLines={2}>
-            {hospital.sigla}
-          </Text>
-          <Text style={styles.hospitalCidade}>{hospital.cidade}</Text>
-          <Text style={styles.hospitalTipo}>{hospital.tipo}</Text>
-        </View>
-        
-        <View style={styles.statusContainer}>
-          <View style={[styles.statusBadge, { backgroundColor: hospital.cor_status }]}>
-            <Text style={styles.statusBadgeText}>
-              {getStatusIcon(hospital.status_ocupacao)}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Barra de Ocupação */}
-      <View style={styles.ocupacaoContainer}>
-        <View style={styles.ocupacaoHeader}>
-          <Text style={styles.ocupacaoLabel}>Taxa de Ocupação</Text>
-          <Text style={[styles.ocupacaoPercentual, { color: hospital.cor_status }]}>
-            {hospital.taxa_ocupacao}%
-          </Text>
-        </View>
-        
-        <View style={styles.progressBarContainer}>
-          <View 
-            style={[
-              styles.progressBar, 
-              { 
-                width: `${hospital.taxa_ocupacao}%`,
-                backgroundColor: hospital.cor_status 
-              }
-            ]} 
-          />
-        </View>
-        
-        <View style={styles.leitosInfo}>
-          <Text style={styles.leitosText}>
-            {hospital.leitos_ocupados}/{hospital.leitos_totais} ocupados
-          </Text>
-          <Text style={styles.leitosDisponiveis}>
-            {hospital.leitos_disponiveis} disponíveis
-          </Text>
-        </View>
-      </View>
-
-      {/* Especialidades */}
-      <View style={styles.especialidadesContainer}>
-        <Text style={styles.especialidadesLabel}>Especialidades:</Text>
-        <View style={styles.especialidadesTags}>
-          {hospital.especialidades.slice(0, 3).map((esp, idx) => (
-            <View key={idx} style={styles.especialidadeTag}>
-              <Text style={styles.especialidadeText}>
-                {esp.replace('_', ' ')}
-              </Text>
-            </View>
-          ))}
-          {hospital.especialidades.length > 3 && (
-            <View style={styles.especialidadeTag}>
-              <Text style={styles.especialidadeText}>
-                +{hospital.especialidades.length - 3}
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Footer */}
-      <View style={styles.hospitalFooter}>
-        <Text style={styles.ultimaAtualizacao}>
-          Atualizado às {hospital.ultima_atualizacao}
-        </Text>
-      </View>
-    </View>
-  );
+  const hospitaisTendenciaAlta = ocupacao_hospitais.filter(h => h.tendencia === 'ALTA').length;
+  const hospitaisTendenciaQueda = ocupacao_hospitais.filter(h => h.tendencia === 'QUEDA').length;
+  const hospitaisComAlerta = ocupacao_hospitais.filter(h => h.alerta_saturacao).length;
 
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Ocupação de Leitos - Rede Estadual</Text>
       
-      {/* Resumo Geral */}
-      {renderResumoCard()}
+      {/* Resumo Card */}
+      <View style={styles.resumoCard}>
+        <Text style={styles.resumoTitle}>Resumo da Rede Estadual</Text>
+        
+        <View style={styles.metricsGrid}>
+          <View style={styles.metricItem}>
+            <Text style={styles.metricValue}>{resumo_ocupacao.total_leitos}</Text>
+            <Text style={styles.metricLabel}>Total de Leitos</Text>
+          </View>
+          
+          <View style={styles.metricItem}>
+            <Text style={[styles.metricValue, { color: Colors.warning }]}>
+              {resumo_ocupacao.total_ocupados}
+            </Text>
+            <Text style={styles.metricLabel}>Ocupados</Text>
+          </View>
+          
+          <View style={styles.metricItem}>
+            <Text style={[styles.metricValue, { color: Colors.success }]}>
+              {resumo_ocupacao.total_disponiveis}
+            </Text>
+            <Text style={styles.metricLabel}>Disponíveis</Text>
+          </View>
+          
+          <View style={styles.metricItem}>
+            <Text style={[styles.metricValue, { color: Colors.primary }]}>
+              {resumo_ocupacao.taxa_media}%
+            </Text>
+            <Text style={styles.metricLabel}>Taxa Média</Text>
+          </View>
+        </View>
+
+        <View style={styles.statusRow}>
+          <View style={styles.statusItem}>
+            <View style={[styles.statusDot, { backgroundColor: Colors.danger }]} />
+            <Text style={styles.statusText}>{resumo_ocupacao.hospitais_criticos} Críticos</Text>
+          </View>
+          
+          <View style={styles.statusItem}>
+            <View style={[styles.statusDot, { backgroundColor: Colors.warning }]} />
+            <Text style={styles.statusText}>{resumo_ocupacao.hospitais_alto} Alto</Text>
+          </View>
+          
+          <View style={styles.statusItem}>
+            <View style={[styles.statusDot, { backgroundColor: Colors.success }]} />
+            <Text style={styles.statusText}>{resumo_ocupacao.hospitais_normal} Normal</Text>
+          </View>
+        </View>
+
+        {/* Tendências */}
+        <View style={styles.tendenciaSection}>
+          <Text style={styles.tendenciaTitle}>Tendências (últimas 6h)</Text>
+          <View style={styles.tendenciaRow}>
+            <View style={styles.tendenciaItem}>
+              <Text style={[styles.tendenciaIcon, { color: Colors.trendUp }]}>↑</Text>
+              <Text style={styles.tendenciaValue}>{hospitaisTendenciaAlta}</Text>
+              <Text style={styles.tendenciaLabel}>Subindo</Text>
+            </View>
+            
+            <View style={styles.tendenciaItem}>
+              <Text style={[styles.tendenciaIcon, { color: Colors.trendDown }]}>↓</Text>
+              <Text style={styles.tendenciaValue}>{hospitaisTendenciaQueda}</Text>
+              <Text style={styles.tendenciaLabel}>Caindo</Text>
+            </View>
+            
+            {hospitaisComAlerta > 0 && (
+              <View style={[styles.tendenciaItem, styles.alertaItem]}>
+                <Text style={styles.tendenciaIcon}>⚠️</Text>
+                <Text style={[styles.tendenciaValue, { color: Colors.danger }]}>
+                  {hospitaisComAlerta}
+                </Text>
+                <Text style={[styles.tendenciaLabel, { color: Colors.danger }]}>
+                  Alertas
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
       
       {/* Lista de Hospitais */}
       <ScrollView 
@@ -210,232 +139,131 @@ const OcupacaoHospitais: React.FC<OcupacaoHospitaisProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.hospitaisContainer}
       >
-        {ocupacao_hospitais.map((hospital, index) => renderHospitalCard(hospital, index))}
+        {ocupacao_hospitais.map((hospital, index) => (
+          <HospitalCard key={index} hospital={hospital} compact />
+        ))}
       </ScrollView>
+
+      {/* Legenda */}
+      <View style={styles.legendaContainer}>
+        <Text style={styles.legendaTitle}>Legenda de Tendências:</Text>
+        <View style={styles.legendaRow}>
+          <View style={styles.legendaItem}>
+            <View style={[styles.legendaBorda, { backgroundColor: Colors.trendUp }]} />
+            <Text style={styles.legendaText}>Alta</Text>
+          </View>
+          <View style={styles.legendaItem}>
+            <View style={[styles.legendaBorda, { backgroundColor: Colors.trendDown }]} />
+            <Text style={styles.legendaText}>Queda</Text>
+          </View>
+          <View style={styles.legendaItem}>
+            <View style={[styles.legendaBorda, { backgroundColor: Colors.trendStable }]} />
+            <Text style={styles.legendaText}>Estável</Text>
+          </View>
+        </View>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginVertical: 20,
-  },
+  container: { marginVertical: Spacing.lg },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#004A8D',
-    marginBottom: 15,
-    paddingHorizontal: 20,
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.primary,
+    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.lg,
   },
-  
-  // Resumo Card
   resumoCard: {
-    backgroundColor: '#FFF',
-    marginHorizontal: 20,
-    marginBottom: 15,
-    borderRadius: 12,
-    padding: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: Colors.surface,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    ...Shadows.card,
   },
   resumoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
+    fontSize: Typography.fontSize.md,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.md,
     textAlign: 'center',
   },
-  resumoGrid: {
+  metricsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    marginBottom: Spacing.md,
   },
-  resumoItem: {
-    alignItems: 'center',
-    flex: 1,
+  metricItem: { alignItems: 'center', flex: 1 },
+  metricValue: {
+    fontSize: Typography.fontSize.xxl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.primary,
   },
-  resumoNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#004A8D',
-  },
-  resumoLabel: {
-    fontSize: 11,
-    color: '#666',
+  metricLabel: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
     textAlign: 'center',
-    marginTop: 2,
+    marginTop: Spacing.xs,
   },
-  statusResumo: {
+  statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingTop: 10,
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: Colors.divider,
   },
-  statusItem: {
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  statusIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 6,
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statusBadgeText: {
-    color: '#FFF',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  statusIcon: {
-    fontSize: 16,
-    marginBottom: 2,
-  },
-  statusText: {
-    fontSize: 11,
-    color: '#666',
-  },
-  
-  // Hospitais Container
-  hospitaisContainer: {
-    paddingHorizontal: 15,
-  },
-  
-  // Hospital Card
-  hospitalCard: {
-    backgroundColor: '#FFF',
-    width: width * 0.8,
-    marginHorizontal: 5,
-    borderRadius: 12,
-    padding: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  hospitalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 15,
-  },
-  hospitalInfo: {
-    flex: 1,
-  },
-  hospitalNome: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#004A8D',
-    marginBottom: 4,
-  },
-  hospitalCidade: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
-  },
-  hospitalTipo: {
-    fontSize: 11,
-    color: '#888',
-    fontStyle: 'italic',
-  },
-  statusContainer: {
-    alignItems: 'center',
-    marginLeft: 10,
-  },
-  
-  // Ocupação
-  ocupacaoContainer: {
-    marginBottom: 15,
-  },
-  ocupacaoHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  ocupacaoLabel: {
-    fontSize: 13,
-    color: '#666',
-    fontWeight: '600',
-  },
-  ocupacaoPercentual: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  progressBarContainer: {
-    height: 8,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  progressBar: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  leitosInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  leitosText: {
-    fontSize: 12,
-    color: '#666',
-  },
-  leitosDisponiveis: {
-    fontSize: 12,
-    color: '#4CAF50',
-    fontWeight: '600',
-  },
-  
-  // Especialidades
-  especialidadesContainer: {
-    marginBottom: 12,
-  },
-  especialidadesLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 6,
-  },
-  especialidadesTags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  especialidadeTag: {
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-    marginRight: 6,
-    marginBottom: 4,
-  },
-  especialidadeText: {
-    fontSize: 10,
-    color: '#1976D2',
-    fontWeight: '500',
-  },
-  
-  // Footer
-  hospitalFooter: {
+  statusItem: { flexDirection: 'row', alignItems: 'center' },
+  statusDot: { width: 12, height: 12, borderRadius: 6, marginRight: Spacing.xs },
+  statusText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary },
+  tendenciaSection: {
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    paddingTop: 8,
+    borderTopColor: Colors.divider,
   },
-  ultimaAtualizacao: {
-    fontSize: 10,
-    color: '#999',
+  tendenciaTitle: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semiBold,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.sm,
     textAlign: 'center',
-    fontStyle: 'italic',
   },
+  tendenciaRow: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.xl },
+  tendenciaItem: { alignItems: 'center' },
+  alertaItem: {
+    backgroundColor: Colors.dangerLight,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.md,
+  },
+  tendenciaIcon: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold },
+  tendenciaValue: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+  },
+  tendenciaLabel: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
+  hospitaisContainer: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+  legendaContainer: {
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.sm,
+    padding: Spacing.md,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    ...Shadows.card,
+  },
+  legendaTitle: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semiBold,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.sm,
+  },
+  legendaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
+  legendaItem: { flexDirection: 'row', alignItems: 'center' },
+  legendaBorda: { width: 16, height: 4, borderRadius: 2, marginRight: Spacing.xs },
+  legendaText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
 });
 
 export default OcupacaoHospitais;

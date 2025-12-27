@@ -1,24 +1,55 @@
+/**
+ * DASHBOARD PÚBLICO - Monitoramento em Tempo Real
+ * Sistema de Regulação Autônoma SES-GO
+ * 
+ * Interface pública para acompanhamento da rede hospitalar
+ */
+
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity, RefreshControl, Alert } from 'react-native';
-import { Platform } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  FlatList, 
+  RefreshControl,
+  Platform,
+} from 'react-native';
+import { 
+  Colors, 
+  Typography, 
+  BorderRadius, 
+  Shadows, 
+  Spacing,
+} from '@/constants/theme';
+import Header from './ui/Header';
+import Toast from './ui/Toast';
 import TransparenciaWidget from './TransparenciaWidget';
 import OcupacaoHospitais from './OcupacaoHospitais';
 
-const { width } = Dimensions.get('window');
-
-// Configuração da API baseada na plataforma
 const API_BASE_URL = Platform.select({
   web: 'http://localhost:8000',
-  default: 'http://10.0.2.2:8000' // Android Emulator
+  default: 'http://10.0.2.2:8000'
 });
 
-const DashboardPublico = ({ dadosLeitos: initialData }) => {
-  const [dadosLeitos, setDadosLeitos] = useState(initialData || []);
+interface UnidadePressao {
+  unidade_executante_desc: string;
+  cidade: string;
+  pacientes_em_fila: number;
+}
+
+interface StatusSummary {
+  status: string;
+  count: number;
+}
+
+const DashboardPublico = ({ dadosLeitos: initialData }: { dadosLeitos?: UnidadePressao[] }) => {
+  const [dadosLeitos, setDadosLeitos] = useState<UnidadePressao[]>(initialData || []);
   const [refreshing, setRefreshing] = useState(false);
-  const [statusSummary, setStatusSummary] = useState([]);
+  const [statusSummary, setStatusSummary] = useState<StatusSummary[]>([]);
   const [ocupacaoHospitais, setOcupacaoHospitais] = useState([]);
   const [resumoOcupacao, setResumoOcupacao] = useState(null);
-  const [lastUpdate, setLastUpdate] = useState(null);
+  const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
 
   const fetchDashboardData = async () => {
     try {
@@ -32,7 +63,6 @@ const DashboardPublico = ({ dadosLeitos: initialData }) => {
       setLastUpdate(data.ultima_atualizacao);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
-      Alert.alert('Erro', 'Não foi possível atualizar os dados');
     }
   };
 
@@ -40,41 +70,35 @@ const DashboardPublico = ({ dadosLeitos: initialData }) => {
     setRefreshing(true);
     await fetchDashboardData();
     setRefreshing(false);
+    setToastVisible(true);
   };
 
   useEffect(() => {
-    // Buscar dados na inicialização se não tiver dados iniciais
     if (!initialData || initialData.length === 0) {
       fetchDashboardData();
     }
     
-    // Atualizar a cada 5 minutos
     const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const getStatusColor = (count) => {
-    if (count > 15) return '#F44336'; // Vermelho - Crítico
-    if (count > 8) return '#FF9800';  // Laranja - Alto
-    if (count > 3) return '#FFC107';  // Amarelo - Moderado
-    return '#4CAF50'; // Verde - Normal
-  };
-
-  const getStatusText = (count) => {
-    if (count > 15) return 'CRÍTICO';
-    if (count > 8) return 'ALTO';
-    if (count > 3) return 'MODERADO';
-    return 'NORMAL';
+  const getStatusConfig = (count: number) => {
+    if (count > 15) return { color: Colors.danger, text: 'CRÍTICO' };
+    if (count > 8) return { color: Colors.warning, text: 'ALTO' };
+    if (count > 3) return { color: Colors.riskYellow, text: 'MODERADO' };
+    return { color: Colors.success, text: 'NORMAL' };
   };
 
   const renderStatusSummary = () => (
-    <View style={styles.summaryContainer}>
+    <View style={styles.summaryCard}>
       <Text style={styles.summaryTitle}>Resumo da Rede SES-GO</Text>
-      <View style={styles.summaryRow}>
+      <View style={styles.summaryGrid}>
         {statusSummary.map((item, index) => (
-          <View key={index} style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>{item.status.replace('_', ' ')}</Text>
+          <View key={index} style={styles.summaryItem}>
             <Text style={styles.summaryValue}>{item.count}</Text>
+            <Text style={styles.summaryLabel}>
+              {item.status.replace('_', ' ')}
+            </Text>
           </View>
         ))}
       </View>
@@ -86,64 +110,81 @@ const DashboardPublico = ({ dadosLeitos: initialData }) => {
     </View>
   );
 
-  const renderCard = ({ item }) => {
-    const statusColor = getStatusColor(item.pacientes_em_fila);
-    const statusText = getStatusText(item.pacientes_em_fila);
+  const renderUnidadeCard = ({ item }: { item: UnidadePressao }) => {
+    const config = getStatusConfig(item.pacientes_em_fila);
     
     return (
-      <TouchableOpacity style={styles.card} activeOpacity={0.7}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.hospitalTitle} numberOfLines={2}>
+      <View style={[styles.unidadeCard, { borderLeftColor: config.color }]}>
+        <View style={styles.unidadeHeader}>
+          <Text style={styles.unidadeNome} numberOfLines={2}>
             {item.unidade_executante_desc}
           </Text>
-          <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-            <Text style={styles.statusBadgeText}>{statusText}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: config.color }]}>
+            <Text style={styles.statusBadgeText}>{config.text}</Text>
           </View>
         </View>
         
-        <View style={styles.cardContent}>
-          <View style={styles.metric}>
-            <Text style={styles.label}>Pacientes em Fila</Text>
-            <Text style={[styles.value, { color: statusColor }]}>
+        <View style={styles.unidadeContent}>
+          <View style={styles.metricContainer}>
+            <Text style={styles.metricLabel}>Pacientes em Fila</Text>
+            <Text style={[styles.metricValue, { color: config.color }]}>
               {item.pacientes_em_fila}
             </Text>
           </View>
           
           {item.cidade && (
-            <View style={styles.locationContainer}>
-              <Text style={styles.locationText}>{item.cidade}</Text>
+            <View style={styles.cidadeContainer}>
+              <Text style={styles.cidadeIcon}>📍</Text>
+              <Text style={styles.cidadeText}>{item.cidade}</Text>
             </View>
           )}
         </View>
-      </TouchableOpacity>
+      </View>
     );
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>SES-GO | Regulação Autônoma</Text>
-        <Text style={styles.headerSubtitle}>Monitoramento em Tempo Real</Text>
-        {lastUpdate && (
-          <Text style={styles.lastUpdate}>
-            Atualizado: {new Date(lastUpdate).toLocaleTimeString('pt-BR')}
-          </Text>
-        )}
-      </View>
+      <Header 
+        title="SES-GO | Regulação" 
+        subtitle="Monitoramento em Tempo Real"
+      />
       
       <FlatList
         data={dadosLeitos}
-        renderItem={renderCard}
+        renderItem={renderUnidadeCard}
         keyExtractor={(item, index) => `${item.unidade_executante_desc}-${index}`}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+          />
         }
         ListHeaderComponent={() => (
           <>
+            {/* Banner de Fonte de Dados */}
+            <View style={styles.fonteBanner}>
+              <Text style={styles.fonteIcon}>🏛️</Text>
+              <View style={styles.fonteTexto}>
+                <Text style={styles.fonteTitulo}>Dados Oficiais SUS Goiás</Text>
+                <Text style={styles.fonteSubtitulo}>
+                  Fonte: Portal da Transparência SES-GO
+                </Text>
+              </View>
+              {lastUpdate && (
+                <View style={styles.fonteUpdate}>
+                  <Text style={styles.fonteUpdateText}>
+                    {new Date(lastUpdate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+              )}
+            </View>
+            
             {statusSummary.length > 0 && renderStatusSummary()}
             
-            {/* NOVA SEÇÃO: Ocupação de Hospitais */}
             {ocupacaoHospitais.length > 0 && resumoOcupacao && (
               <OcupacaoHospitais 
                 ocupacao_hospitais={ocupacaoHospitais}
@@ -155,162 +196,219 @@ const DashboardPublico = ({ dadosLeitos: initialData }) => {
             
             {dadosLeitos.length > 0 && (
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Unidades com Pressão na Regulação</Text>
+                <Text style={styles.sectionTitle}>
+                  Unidades com Pressão na Regulação
+                </Text>
               </View>
             )}
           </>
         )}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyIcon}>✅</Text>
+            <Text style={styles.emptyText}>Sistema Operando Normalmente</Text>
+            <Text style={styles.emptySubtext}>
+              Nenhuma unidade com pressão crítica no momento
+            </Text>
+          </View>
+        }
         showsVerticalScrollIndicator={false}
+      />
+
+      <Toast
+        visible={toastVisible}
+        message="Dados atualizados com sucesso"
+        type="success"
+        onHide={() => setToastVisible(false)}
       />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA' },
-  header: { 
-    padding: 20, 
-    backgroundColor: '#004A8D',
-    borderBottomLeftRadius: 15, 
-    borderBottomRightRadius: 15,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
   },
-  headerTitle: { 
-    color: '#FFF', 
-    fontSize: 20, 
-    fontWeight: 'bold',
-    textAlign: 'center'
-  },
-  headerSubtitle: {
-    color: '#E3F2FD',
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 4
-  },
-  lastUpdate: {
-    color: '#E3F2FD',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 8
-  },
-  summaryContainer: {
-    backgroundColor: '#FFF',
-    margin: 15,
-    padding: 16,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-  },
-  summaryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around'
+  listContent: {
+    paddingBottom: Spacing.xxxl,
   },
   summaryCard: {
-    alignItems: 'center',
-    flex: 1
+    backgroundColor: Colors.surface,
+    margin: Spacing.lg,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.card,
   },
-  summaryLabel: {
-    fontSize: 11,
-    color: '#666',
-    textAlign: 'center'
+  summaryTitle: {
+    fontSize: Typography.fontSize.md,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.md,
+    textAlign: 'center',
+  },
+  summaryGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  summaryItem: {
+    alignItems: 'center',
+    flex: 1,
   },
   summaryValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#004A8D',
-    marginTop: 4
+    fontSize: Typography.fontSize.xxl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.primary,
+  },
+  summaryLabel: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginTop: Spacing.xs,
   },
   summaryFooter: {
-    fontSize: 10,
-    color: '#999',
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
     textAlign: 'center',
-    marginTop: 8,
-    fontStyle: 'italic'
+    marginTop: Spacing.md,
+    fontStyle: 'italic',
   },
-  list: { 
-    padding: 15,
-    paddingTop: 0
+  sectionHeader: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
-  card: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+  sectionTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.primary,
+    letterSpacing: Typography.letterSpacing.wide,
   },
-  cardHeader: {
+  unidadeCard: {
+    backgroundColor: Colors.surface,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    borderLeftWidth: 6,
+    ...Shadows.card,
+  },
+  unidadeHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12
+    marginBottom: Spacing.md,
   },
-  hospitalTitle: { 
-    fontSize: 14, 
-    fontWeight: '600', 
-    color: '#333',
+  unidadeNome: {
+    fontSize: Typography.fontSize.md,
+    fontWeight: Typography.fontWeight.semiBold,
+    color: Colors.textPrimary,
     flex: 1,
-    marginRight: 8
+    marginRight: Spacing.sm,
+    lineHeight: Typography.fontSize.md * Typography.lineHeight.normal,
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    minWidth: 60,
-    alignItems: 'center'
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
   },
   statusBadgeText: {
-    color: '#FFF',
-    fontSize: 10,
-    fontWeight: 'bold'
+    color: Colors.textOnPrimary,
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.bold,
   },
-  cardContent: {
+  unidadeContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
   },
-  metric: {
-    flex: 1
-  },
-  label: { 
-    fontSize: 12, 
-    color: '#666',
-    marginBottom: 4
-  },
-  value: { 
-    fontSize: 24, 
-    fontWeight: 'bold'
-  },
-  locationContainer: {
+  metricContainer: {
     flex: 1,
-    alignItems: 'flex-end'
   },
-  locationText: {
-    fontSize: 12,
-    color: '#666'
+  metricLabel: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    marginBottom: Spacing.xs,
   },
-  sectionHeader: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+  metricValue: {
+    fontSize: Typography.fontSize.xxxl,
+    fontWeight: Typography.fontWeight.bold,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#004A8D',
-  }
+  cidadeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cidadeIcon: {
+    fontSize: Typography.fontSize.sm,
+    marginRight: Spacing.xs,
+  },
+  cidadeText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxxl,
+    marginHorizontal: Spacing.lg,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.card,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: Spacing.md,
+  },
+  emptyText: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.success,
+    marginBottom: Spacing.xs,
+  },
+  emptySubtext: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  // Banner de Fonte de Dados
+  fonteBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primaryLight,
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.primary,
+  },
+  fonteIcon: {
+    fontSize: 24,
+    marginRight: Spacing.md,
+  },
+  fonteTexto: {
+    flex: 1,
+  },
+  fonteTitulo: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.primary,
+  },
+  fonteSubtitulo: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  fonteUpdate: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.sm,
+  },
+  fonteUpdateText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textOnPrimary,
+    fontWeight: Typography.fontWeight.bold,
+  },
 });
 
 export default DashboardPublico;

@@ -12,6 +12,15 @@ import {
 } from 'react-native';
 import CardDecisaoIA from './CardDecisaoIA';
 
+// Helper para alerts compatíveis com web
+const showAlert = (title: string, message: string) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
+
 // Configuração da API baseada na plataforma
 const API_BASE_URL = Platform.select({
   web: 'http://localhost:8000',  // Sistema Unificado
@@ -72,7 +81,7 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
       }
     } catch (error) {
       console.error('Erro ao buscar fila:', error);
-      Alert.alert('Erro', 'Não foi possível carregar a fila de regulação');
+      showAlert('Erro', 'Não foi possível carregar a fila de regulação');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -129,7 +138,7 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
       
     } catch (error) {
       console.error('❌ Erro no processamento IA:', error);
-      Alert.alert(
+      showAlert(
         'Erro na IA', 
         `Falha no processamento: ${error instanceof Error ? error.message : 'Erro desconhecido'}\n\nVerifique se o MS-Regulacao está rodando.`
       );

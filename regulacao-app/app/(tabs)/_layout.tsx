@@ -25,7 +25,7 @@ export default function TabLayout() {
           height: 60,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600',
         },
       }}>
@@ -33,35 +33,42 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ color }) => <IconSymbol size={22} name="chart.bar.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={20} name="chart.bar.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Hospital',
-          tabBarIcon: ({ color }) => <IconSymbol size={22} name="cross.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={20} name="cross.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="consulta"
         options={{
           title: 'Consulta',
-          tabBarIcon: ({ color }) => <IconSymbol size={22} name="magnifyingglass" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={20} name="magnifyingglass" color={color} />,
         }}
       />
       <Tabs.Screen
         name="regulacao"
         options={{
           title: 'Regulação',
-          tabBarIcon: ({ color }) => <IconSymbol size={22} name="list.clipboard.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={20} name="list.clipboard.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="auditoria"
+        options={{
+          title: 'Auditoria',
+          tabBarIcon: ({ color }) => <IconSymbol size={20} name="eye.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="transferencia"
         options={{
-          title: 'Transferência',
-          tabBarIcon: ({ color }) => <IconSymbol size={22} name="truck.box.fill" color={color} />,
+          title: 'Transfer.',
+          tabBarIcon: ({ color }) => <IconSymbol size={20} name="truck.box.fill" color={color} />,
         }}
       />
     </Tabs>

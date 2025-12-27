@@ -1,6 +1,36 @@
+#!/usr/bin/env python3
 """
 BIOBERT SERVICE - Serviço compartilhado para análise de textos médicos
 Extração de entidades clínicas usando BioBERT
+
+=== TRANSPARÊNCIA DO MODELO (FAPEG - IA ABERTA) ===
+
+MODELO PRINCIPAL: BioBERT v1.1
+- Fonte: dmis-lab/biobert-base-cased-v1.1
+- Licença: Apache 2.0 (Open Source)
+- Repositório: https://huggingface.co/dmis-lab/biobert-base-cased-v1.1
+
+DADOS DE TREINAMENTO:
+- PubMed Abstracts: 4.5 bilhões de palavras (1966-2019)
+- PMC Full-text: 13.5 bilhões de palavras
+- Vocabulário: 28.996 tokens WordPiece especializados em terminologia médica
+
+REFERÊNCIA CIENTÍFICA:
+Lee, J., Yoon, W., Kim, S., Kim, D., Kim, S., So, C. H., & Kang, J. (2020).
+BioBERT: a pre-trained biomedical language representation model for biomedical text mining.
+Bioinformatics, 36(4), 1234-1240.
+DOI: 10.1093/bioinformatics/btz682
+
+FALLBACKS (em ordem de prioridade):
+1. Bio_ClinicalBERT (emilyalsentzer/Bio_ClinicalBERT) - Licença MIT
+   - Treinado em MIMIC-III (notas clínicas de UTI)
+2. BERT Base (bert-base-uncased) - Licença Apache 2.0
+   - Modelo genérico como último recurso
+
+AUDITABILIDADE:
+- Todas as análises são registradas com timestamp
+- Score de confiança é calculado e retornado
+- Entidades detectadas são listadas explicitamente
 """
 
 import logging

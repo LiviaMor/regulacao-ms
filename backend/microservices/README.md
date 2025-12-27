@@ -31,24 +31,44 @@ Sistema distribuído em microserviços para escalabilidade e manutenibilidade, p
   - Acompanhamento de transporte
   - Status de transferência
 
+### 4. MS-Ingestao (Porta 8004) - NOVO
+- **Responsabilidade**: Memória de Curto Prazo do Sistema
+- **Funcionalidades**:
+  - Ingestão de dados de ocupação hospitalar
+  - Cálculo de tendências (ALTA, QUEDA, ESTÁVEL)
+  - Alertas de saturação preditivos
+  - Endpoint enriquecido para IA/LLM
+  - Histórico de ocupação por hospital
+- **Endpoint Principal**: `/api/v1/inteligencia/hospitais-disponiveis`
+- **Janela de Análise**: 6 horas
+- **Limiares**:
+  - ALTA: variação > +5%
+  - QUEDA: variação < -5%
+  - Alerta Saturação: ocupação > 90% + tendência ALTA
+
 ## Microserviços Futuros (Planejados)
 
-### 4. MS-Alta (Porta 8004)
+### 5. MS-Alta (Porta 8005)
 - Gestão de altas hospitalares
 - Contrarreferência
 - Relatórios de alta
 
-### 5. MS-Obito (Porta 8005)
-- Registro de óbitos
-- Estatísticas de mortalidade
-- Relatórios epidemiológicos
+### 5. MS-Alta (Porta 8005)
+- Gestão de altas hospitalares
+- Contrarreferência
+- Relatórios de alta
 
-### 6. MS-Transplante (Porta 8006)
+### 6. MS-Obito (Porta 8006)
 - Fila de transplantes
 - Compatibilidade de órgãos
 - Logística de transplantes
 
-### 7. MS-Medicacao (Porta 8007)
+### 7. MS-Transplante (Porta 8007)
+- Fila de transplantes
+- Compatibilidade de órgãos
+- Logística de transplantes
+
+### 8. MS-Medicacao (Porta 8008)
 - Medicação de alta complexidade
 - Controle de estoque
 - Dispensação especializada
@@ -67,6 +87,7 @@ backend/microservices/
 ├── ms-hospital/
 ├── ms-regulacao/
 ├── ms-transferencia/
+├── ms-ingestao/          # NOVO - Memória de Curto Prazo
 ├── ms-alta/ (futuro)
 ├── ms-obito/ (futuro)
 ├── ms-transplante/ (futuro)

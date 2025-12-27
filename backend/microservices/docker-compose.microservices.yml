@@ -89,6 +89,34 @@ services:
       timeout: 10s
       retries: 3
 
+  # MS-Ingestao (Porta 8004) - Memória de Curto Prazo
+  ms-ingestao:
+    build:
+      context: ../
+      dockerfile: microservices/Dockerfile.microservice
+      args:
+        SERVICE_NAME: ms-ingestao
+    container_name: ms-ingestao
+    environment:
+      - DATABASE_URL=postgresql://regulacao_user:regulacao_pass@db:5432/regulacao_db
+      - JWT_SECRET_KEY=regulacao_jwt_secret_key_production
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8004:8004"
+    volumes:
+      - ./ms-ingestao:/app/ms-ingestao
+      - ./shared:/app/shared
+      - ../main_unified.py:/app/main_unified.py
+      - ../pipeline_hospitais_goias.py:/app/pipeline_hospitais_goias.py
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # === INFRAESTRUTURA COMPARTILHADA ===
 
   # Ollama (Llama 3) - OPEN SOURCE LLM

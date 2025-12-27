@@ -11,6 +11,28 @@ import {
   ActivityIndicator
 } from 'react-native';
 
+// Helper para alerts compatíveis com web
+const showAlert = (title: string, message: string) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
+
+const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+  if (Platform.OS === 'web') {
+    if (window.confirm(`${title}\n\n${message}`)) {
+      onConfirm();
+    }
+  } else {
+    Alert.alert(title, message, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Confirmar', onPress: onConfirm }
+    ]);
+  }
+};
+
 // Configuração da API baseada na plataforma
 const API_BASE_URL = Platform.select({
   web: 'http://localhost:8000',
@@ -23,84 +45,43 @@ interface PacienteTransferencia {
   especialidade: string;
   unidade_origem: string;
   unidade_destino: string;
+  cidade_origem: string;
   tipo_transporte: 'USA' | 'USB' | 'AEROMÉDICO';
-  status_ambulancia: 'SOLICITADA' | 'A_CAMINHO' | 'NO_LOCAL' | 'TRANSPORTANDO';
-  previsao_chegada?: string;
-  observacoes?: string;
-  regulador_responsavel: string;
+  status_ambulancia: 'PENDENTE' | 'SOLICITADA' | 'A_CAMINHO' | 'NO_LOCAL' | 'TRANSPORTANDO' | 'CONCLUIDA';
+  status_paciente: string;
   classificacao_risco: 'VERMELHO' | 'AMARELO' | 'VERDE';
+  observacoes?: string;
+  data_solicitacao_ambulancia?: string;
 }
 
-const AreaTransferencia = () => {
+interface AreaTransferenciaProps {
+  userToken: string;
+}
+
+const AreaTransferencia: React.FC<AreaTransferenciaProps> = ({ userToken }) => {
   const [pacientes, setPacientes] = useState<PacienteTransferencia[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  // Dados simulados para demonstração
-  const dadosSimulados: PacienteTransferencia[] = [
-    {
-      protocolo: 'REG-2024-001',
-      data_autorizacao: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 min atrás
-      especialidade: 'CARDIOLOGIA',
-      unidade_origem: 'HOSPITAL MUNICIPAL DE GOIÂNIA',
-      unidade_destino: 'HOSPITAL ESTADUAL DR ALBERTO RASSI HGG',
-      tipo_transporte: 'USA',
-      status_ambulancia: 'A_CAMINHO',
-      previsao_chegada: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 min
-      regulador_responsavel: 'Dr. João Silva',
-      classificacao_risco: 'VERMELHO'
-    },
-    {
-      protocolo: 'REG-2024-002',
-      data_autorizacao: new Date(Date.now() - 45 * 60 * 1000).toISOString(), // 45 min atrás
-      especialidade: 'TRAUMATOLOGIA',
-      unidade_origem: 'UPA JARDIM AMÉRICA',
-      unidade_destino: 'HOSPITAL DE URGÊNCIAS DE GOIÁS DR VALDEMIRO CRUZ HUGO',
-      tipo_transporte: 'USA',
-      status_ambulancia: 'TRANSPORTANDO',
-      previsao_chegada: new Date(Date.now() + 25 * 60 * 1000).toISOString(), // 25 min
-      regulador_responsavel: 'Dra. Maria Santos',
-      classificacao_risco: 'VERMELHO'
-    },
-    {
-      protocolo: 'REG-2024-003',
-      data_autorizacao: new Date(Date.now() - 20 * 60 * 1000).toISOString(), // 20 min atrás
-      especialidade: 'ORTOPEDIA',
-      unidade_origem: 'HOSPITAL MUNICIPAL DE APARECIDA',
-      unidade_destino: 'HOSPITAL ESTADUAL DE ANÁPOLIS DR HENRIQUE SANTILLO',
-      tipo_transporte: 'USB',
-      status_ambulancia: 'SOLICITADA',
-      regulador_responsavel: 'Dr. Carlos Oliveira',
-      classificacao_risco: 'AMARELO'
-    },
-    {
-      protocolo: 'REG-2024-004',
-      data_autorizacao: new Date(Date.now() - 10 * 60 * 1000).toISOString(), // 10 min atrás
-      especialidade: 'NEUROLOGIA',
-      unidade_origem: 'HOSPITAL REGIONAL DE FORMOSA',
-      unidade_destino: 'HOSPITAL ESTADUAL DR ALBERTO RASSI HGG',
-      tipo_transporte: 'USA',
-      status_ambulancia: 'NO_LOCAL',
-      previsao_chegada: new Date(Date.now() + 40 * 60 * 1000).toISOString(), // 40 min
-      regulador_responsavel: 'Dra. Ana Costa',
-      classificacao_risco: 'VERMELHO'
-    }
-  ];
+  const [processando, setProcessando] = useState<string | null>(null);
 
   const fetchPacientesTransferencia = async () => {
     try {
-      // Em produção, seria uma chamada real para a API
-      // const response = await fetch(`${API_BASE_URL}/pacientes-transferencia`);
-      
-      // Simulando delay de rede
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Usar dados simulados
-      setPacientes(dadosSimulados);
-      
+      const response = await fetch(`${API_BASE_URL}/pacientes-transferencia`, {
+        headers: {
+          'Authorization': `Bearer ${userToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPacientes(data);
+      } else {
+        throw new Error('Erro ao buscar pacientes');
+      }
     } catch (error) {
       console.error('Erro ao buscar pacientes em transferência:', error);
-      Alert.alert('Erro', 'Não foi possível carregar os pacientes em transferência');
+      showAlert('Erro', 'Não foi possível carregar os pacientes em transferência');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -112,24 +93,122 @@ const AreaTransferencia = () => {
     fetchPacientesTransferencia();
   };
 
+  const solicitarAmbulancia = async (protocolo: string, tipoTransporte: string) => {
+    try {
+      setProcessando(protocolo);
+      
+      const response = await fetch(`${API_BASE_URL}/solicitar-ambulancia`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${userToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          protocolo,
+          tipo_transporte: tipoTransporte,
+          observacoes: `Ambulância ${tipoTransporte} solicitada via sistema`
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        showAlert('Sucesso', data.message);
+        fetchPacientesTransferencia(); // Recarregar lista
+      } else {
+        const error = await response.json();
+        throw new Error(error.detail || 'Erro ao solicitar ambulância');
+      }
+    } catch (error) {
+      console.error('Erro ao solicitar ambulância:', error);
+      showAlert('Erro', error instanceof Error ? error.message : 'Não foi possível solicitar ambulância');
+    } finally {
+      setProcessando(null);
+    }
+  };
+
   const atualizarStatusAmbulancia = async (protocolo: string, novoStatus: string) => {
     try {
-      // Em produção, seria uma chamada para a API
-      Alert.alert(
-        'Status Atualizado',
-        `Status da ambulância para ${protocolo} atualizado para: ${novoStatus}`
-      );
+      setProcessando(protocolo);
       
-      // Atualizar localmente
-      setPacientes(prev => 
-        prev.map(p => 
-          p.protocolo === protocolo 
-            ? { ...p, status_ambulancia: novoStatus as any }
-            : p
-        )
-      );
+      const response = await fetch(`${API_BASE_URL}/atualizar-status-ambulancia`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${userToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          protocolo,
+          novo_status: novoStatus
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        showAlert('Sucesso', data.message);
+        fetchPacientesTransferencia(); // Recarregar lista
+      } else {
+        const error = await response.json();
+        throw new Error(error.detail || 'Erro ao atualizar status');
+      }
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível atualizar o status');
+      console.error('Erro ao atualizar status:', error);
+      showAlert('Erro', error instanceof Error ? error.message : 'Não foi possível atualizar status');
+    } finally {
+      setProcessando(null);
+    }
+  };
+
+  const handleSolicitarAmbulancia = (paciente: PacienteTransferencia) => {
+    // Mostrar opções de tipo de transporte
+    const mensagem = `Selecione o tipo de transporte para ${paciente.protocolo}:\n\nUSA - Unidade de Suporte Avançado\nUSB - Unidade de Suporte Básico\nAEROMÉDICO - Helicóptero`;
+    
+    if (Platform.OS === 'web') {
+      const tipo = window.prompt(mensagem, 'USA');
+      if (tipo && ['USA', 'USB', 'AEROMÉDICO'].includes(tipo.toUpperCase())) {
+        solicitarAmbulancia(paciente.protocolo, tipo.toUpperCase());
+      }
+    } else {
+      Alert.alert(
+        'Tipo de Transporte',
+        mensagem,
+        [
+          { text: 'USA', onPress: () => solicitarAmbulancia(paciente.protocolo, 'USA') },
+          { text: 'USB', onPress: () => solicitarAmbulancia(paciente.protocolo, 'USB') },
+          { text: 'AEROMÉDICO', onPress: () => solicitarAmbulancia(paciente.protocolo, 'AEROMÉDICO') },
+          { text: 'Cancelar', style: 'cancel' }
+        ]
+      );
+    }
+  };
+
+  const handleAtualizarStatus = (paciente: PacienteTransferencia) => {
+    const statusOptions = ['A_CAMINHO', 'NO_LOCAL', 'TRANSPORTANDO', 'CONCLUIDA'];
+    const statusLabels = {
+      'A_CAMINHO': 'A Caminho',
+      'NO_LOCAL': 'No Local',
+      'TRANSPORTANDO': 'Transportando',
+      'CONCLUIDA': 'Concluída'
+    };
+    
+    if (Platform.OS === 'web') {
+      const opcoes = statusOptions.map((s, i) => `${i + 1}. ${statusLabels[s as keyof typeof statusLabels]}`).join('\n');
+      const escolha = window.prompt(`Atualizar status da ambulância:\n\n${opcoes}\n\nDigite o número:`);
+      
+      if (escolha) {
+        const index = parseInt(escolha) - 1;
+        if (index >= 0 && index < statusOptions.length) {
+          atualizarStatusAmbulancia(paciente.protocolo, statusOptions[index]);
+        }
+      }
+    } else {
+      Alert.alert(
+        'Atualizar Status',
+        'Selecione o novo status:',
+        statusOptions.map(status => ({
+          text: statusLabels[status as keyof typeof statusLabels],
+          onPress: () => atualizarStatusAmbulancia(paciente.protocolo, status)
+        })).concat([{ text: 'Cancelar', style: 'cancel' }])
+      );
     }
   };
 
@@ -148,20 +227,24 @@ const AreaTransferencia = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'PENDENTE': return '#9E9E9E';
       case 'SOLICITADA': return '#FF9800';
       case 'A_CAMINHO': return '#2196F3';
       case 'NO_LOCAL': return '#9C27B0';
       case 'TRANSPORTANDO': return '#4CAF50';
+      case 'CONCLUIDA': return '#1B5E20';
       default: return '#666';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
+      case 'PENDENTE': return 'PENDENTE';
       case 'SOLICITADA': return 'SOLICITADA';
       case 'A_CAMINHO': return 'A CAMINHO';
       case 'NO_LOCAL': return 'NO LOCAL';
       case 'TRANSPORTANDO': return 'TRANSPORTANDO';
+      case 'CONCLUIDA': return 'CONCLUÍDA';
       default: return status;
     }
   };
@@ -206,112 +289,112 @@ const AreaTransferencia = () => {
     }
   };
 
-  const renderPaciente = ({ item }: { item: PacienteTransferencia }) => (
-    <View style={styles.pacienteCard}>
-      {/* Header com protocolo e risco */}
-      <View style={styles.pacienteHeader}>
-        <Text style={styles.protocolo}>{item.protocolo}</Text>
+  const renderPaciente = ({ item }: { item: PacienteTransferencia }) => {
+    const isProcessando = processando === item.protocolo;
+    
+    return (
+      <View style={styles.pacienteCard}>
+        {/* Header com protocolo e risco */}
+        <View style={styles.pacienteHeader}>
+          <Text style={styles.protocolo}>{item.protocolo}</Text>
+          <View style={[
+            styles.riskBadge, 
+            { backgroundColor: getRiskColor(item.classificacao_risco) }
+          ]}>
+            <Text style={styles.riskText}>{item.classificacao_risco}</Text>
+          </View>
+        </View>
+
+        {/* Status da ambulância */}
         <View style={[
-          styles.riskBadge, 
-          { backgroundColor: getRiskColor(item.classificacao_risco) }
+          styles.statusContainer,
+          { backgroundColor: getStatusColor(item.status_ambulancia) }
         ]}>
-          <Text style={styles.riskText}>{item.classificacao_risco}</Text>
+          <Text style={styles.statusText}>
+            {getStatusIcon(item.status_ambulancia)}
+          </Text>
+          <Text style={styles.tempoDecorrido}>
+            {getTempoDecorrido(item.data_autorizacao)}
+          </Text>
         </View>
-      </View>
 
-      {/* Status da ambulância */}
-      <View style={[
-        styles.statusContainer,
-        { backgroundColor: getStatusColor(item.status_ambulancia) }
-      ]}>
-        <Text style={styles.statusText}>
-          {getStatusIcon(item.status_ambulancia)}
-        </Text>
-        <Text style={styles.tempoDecorrido}>
-          {getTempoDecorrido(item.data_autorizacao)}
-        </Text>
-      </View>
-
-      {/* Informações do transporte */}
-      <View style={styles.transporteInfo}>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Origem:</Text>
-          <Text style={styles.infoValue} numberOfLines={2}>
-            {item.unidade_origem}
-          </Text>
-        </View>
-        
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Destino:</Text>
-          <Text style={styles.infoValue} numberOfLines={2}>
-            {item.unidade_destino}
-          </Text>
-        </View>
-        
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Transporte:</Text>
-          <Text style={styles.infoValue}>
-            {getTransportIcon(item.tipo_transporte)}
-          </Text>
-        </View>
-        
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Especialidade:</Text>
-          <Text style={styles.infoValue}>{item.especialidade}</Text>
-        </View>
-        
-        {item.previsao_chegada && (
+        {/* Informações do transporte */}
+        <View style={styles.transporteInfo}>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Previsão:</Text>
-            <Text style={[styles.infoValue, { fontWeight: 'bold', color: '#2196F3' }]}>
-              {formatTime(item.previsao_chegada)}
+            <Text style={styles.infoLabel}>Origem:</Text>
+            <Text style={styles.infoValue} numberOfLines={2}>
+              {item.unidade_origem}
             </Text>
           </View>
-        )}
-        
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Regulador:</Text>
-          <Text style={styles.infoValue}>{item.regulador_responsavel}</Text>
+          
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Destino:</Text>
+            <Text style={styles.infoValue} numberOfLines={2}>
+              {item.unidade_destino}
+            </Text>
+          </View>
+          
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Transporte:</Text>
+            <Text style={styles.infoValue}>
+              {getTransportIcon(item.tipo_transporte)}
+            </Text>
+          </View>
+          
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Especialidade:</Text>
+            <Text style={styles.infoValue}>{item.especialidade}</Text>
+          </View>
+          
+          {item.data_solicitacao_ambulancia && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Solicitada em:</Text>
+              <Text style={styles.infoValue}>
+                {formatTime(item.data_solicitacao_ambulancia)}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Botões de ação */}
+        <View style={styles.actionButtons}>
+          {item.status_ambulancia === 'PENDENTE' && (
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#FF9800' }]}
+              onPress={() => handleSolicitarAmbulancia(item)}
+              disabled={isProcessando}
+            >
+              {isProcessando ? (
+                <ActivityIndicator color="#FFF" size="small" />
+              ) : (
+                <Text style={styles.actionButtonText}>🚑 Solicitar Ambulância</Text>
+              )}
+            </TouchableOpacity>
+          )}
+          
+          {item.status_ambulancia !== 'PENDENTE' && item.status_ambulancia !== 'CONCLUIDA' && (
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#2196F3' }]}
+              onPress={() => handleAtualizarStatus(item)}
+              disabled={isProcessando}
+            >
+              {isProcessando ? (
+                <ActivityIndicator color="#FFF" size="small" />
+              ) : (
+                <Text style={styles.actionButtonText}>Atualizar Status</Text>
+              )}
+            </TouchableOpacity>
+          )}
+          
+          {item.status_ambulancia === 'CONCLUIDA' && (
+            <View style={[styles.actionButton, { backgroundColor: '#1B5E20', opacity: 0.7 }]}>
+              <Text style={styles.actionButtonText}>✓ Transferência Concluída</Text>
+            </View>
+          )}
         </View>
       </View>
-
-      {/* Botões de ação */}
-      <View style={styles.actionButtons}>
-        {item.status_ambulancia === 'SOLICITADA' && (
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: '#2196F3' }]}
-            onPress={() => atualizarStatusAmbulancia(item.protocolo, 'A_CAMINHO')}
-          >
-            <Text style={styles.actionButtonText}>A Caminho</Text>
-          </TouchableOpacity>
-        )}
-        
-        {item.status_ambulancia === 'A_CAMINHO' && (
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: '#9C27B0' }]}
-            onPress={() => atualizarStatusAmbulancia(item.protocolo, 'NO_LOCAL')}
-          >
-            <Text style={styles.actionButtonText}>No Local</Text>
-          </TouchableOpacity>
-        )}
-        
-        {item.status_ambulancia === 'NO_LOCAL' && (
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}
-            onPress={() => atualizarStatusAmbulancia(item.protocolo, 'TRANSPORTANDO')}
-          >
-            <Text style={styles.actionButtonText}>Transportando</Text>
-          </TouchableOpacity>
-        )}
-        
-        {item.status_ambulancia === 'TRANSPORTANDO' && (
-          <View style={[styles.actionButton, { backgroundColor: '#4CAF50', opacity: 0.7 }]}>
-            <Text style={styles.actionButtonText}>Em Transporte</Text>
-          </View>
-        )}
-      </View>
-    </View>
-  );
+    );
+  };
 
   if (loading) {
     return (

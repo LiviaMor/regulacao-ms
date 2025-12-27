@@ -43,34 +43,49 @@ export default function RegulacaoScreen() {
       if (response.ok) {
         setUserToken(data.access_token);
         setUserInfo(data.user_info);
-        Alert.alert('Login Realizado', `Bem-vindo, ${data.user_info.nome}!`);
+        if (Platform.OS === 'web') {
+          window.alert(`Login Realizado!\nBem-vindo, ${data.user_info.nome}!`);
+        } else {
+          Alert.alert('Login Realizado', `Bem-vindo, ${data.user_info.nome}!`);
+        }
       } else {
         throw new Error(data.detail || 'Erro no login');
       }
     } catch (error) {
       console.error('Erro no login:', error);
-      Alert.alert('Erro', 'Falha no login. Verifique sua conexão.');
+      if (Platform.OS === 'web') {
+        window.alert('Erro: Falha no login. Verifique sua conexão.');
+      } else {
+        Alert.alert('Erro', 'Falha no login. Verifique sua conexão.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const logout = () => {
-    Alert.alert(
-      'Confirmar Logout',
-      'Deseja realmente sair do sistema?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Sair', 
-          style: 'destructive',
-          onPress: () => {
-            setUserToken(null);
-            setUserInfo(null);
+    if (Platform.OS === 'web') {
+      if (window.confirm('Deseja realmente sair do sistema?')) {
+        setUserToken(null);
+        setUserInfo(null);
+      }
+    } else {
+      Alert.alert(
+        'Confirmar Logout',
+        'Deseja realmente sair do sistema?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { 
+            text: 'Sair', 
+            style: 'destructive',
+            onPress: () => {
+              setUserToken(null);
+              setUserInfo(null);
+            }
           }
-        }
-      ]
-    );
+        ]
+      );
+    }
   };
 
   // Se não estiver logado, mostrar tela de login

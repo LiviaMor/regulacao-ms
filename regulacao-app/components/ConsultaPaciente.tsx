@@ -19,36 +19,47 @@ const API_BASE_URL = Platform.select({
 
 interface PacienteInfo {
   protocolo: string;
+  nome_anonimizado?: string;
+  cpf_anonimizado?: string;
+  telefone_anonimizado?: string;
   data_solicitacao: string;
   status: string;
   especialidade: string;
   unidade_solicitante: string;
   cidade_origem: string;
   unidade_destino?: string;
+  classificacao_risco?: string;
+  data_atualizacao?: string;
   posicao_fila?: number;
   total_fila?: number;
-  previsao_atendimento?: string;
   score_prioridade?: number;
-  classificacao_risco?: string;
-  historico_movimentacoes: Array<{
+  previsao_atendimento?: string;
+  historico_movimentacoes?: Array<{
     data: string;
     status_anterior: string;
     status_novo: string;
-    observacoes?: string;
     responsavel?: string;
+    observacoes?: string;
   }>;
+  // Informações de transferência e ambulância
+  status_ambulancia?: string;
+  tipo_transporte?: string;
+  data_solicitacao_ambulancia?: string;
 }
 
 const ConsultaPaciente = () => {
   const [busca, setBusca] = useState('');
-  const [tipoBusca, setTipoBusca] = useState<'protocolo' | 'cpf'>('protocolo');
   const [paciente, setPaciente] = useState<PacienteInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   const buscarPaciente = async () => {
     if (!busca.trim()) {
-      Alert.alert('Erro', 'Informe o protocolo ou CPF para buscar');
+      if (Platform.OS === 'web') {
+        window.alert('Informe o protocolo para buscar');
+      } else {
+        Alert.alert('Erro', 'Informe o protocolo para buscar');
+      }
       return;
     }
 
@@ -57,27 +68,16 @@ const ConsultaPaciente = () => {
       setErro(null);
       setPaciente(null);
 
-      const response = await fetch(`${API_BASE_URL}/consulta-paciente`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          tipo_busca: tipoBusca,
-          valor_busca: busca.trim()
-        }),
-      });
-
-      const data = await response.json();
+      // Usar endpoint público com anonimização
+      const response = await fetch(`${API_BASE_URL}/consulta-publica/paciente/${busca.trim()}`);
 
       if (response.ok) {
-        if (data.encontrado) {
-          setPaciente(data.paciente);
-        } else {
-          setErro('Paciente não encontrado ou não está em regulação');
-        }
+        const data = await response.json();
+        setPaciente(data);
+      } else if (response.status === 404) {
+        setErro('Paciente não encontrado');
       } else {
-        throw new Error(data.detail || 'Erro na consulta');
+        throw new Error('Erro na consulta');
       }
     } catch (error) {
       console.error('Erro na busca:', error);
@@ -177,6 +177,32 @@ const ConsultaPaciente = () => {
               <Text style={styles.infoValue}>{paciente.unidade_destino}</Text>
             </View>
           )}
+          
+          {/* Status de Ambulância */}
+          {paciente.status_ambulancia && (
+            <>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Status Ambulância:</Text>
+                <Text style={[styles.infoValue, { color: '#FF9800', fontWeight: 'bold' }]}>
+                  {paciente.status_ambulancia.replace(/_/g, ' ')}
+                </Text>
+              </View>
+              
+              {paciente.tipo_transporte && (
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Tipo de Transporte:</Text>
+                  <Text style={styles.infoValue}>{paciente.tipo_transporte}</Text>
+                </View>
+              )}
+              
+              {paciente.data_solicitacao_ambulancia && (
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Ambulância Solicitada:</Text>
+                  <Text style={styles.infoValue}>{formatarData(paciente.data_solicitacao_ambulancia)}</Text>
+                </View>
+              )}
+            </>
+          )}
         </View>
 
         {/* Análise de Prioridade */}
@@ -218,7 +244,7 @@ const ConsultaPaciente = () => {
         <View style={styles.infoCard}>
           <Text style={styles.cardTitle}>Histórico de Movimentações</Text>
           
-          {paciente.historico_movimentacoes.length > 0 ? (
+          {paciente.historico_movimentacoes && paciente.historico_movimentacoes.length > 0 ? (
             paciente.historico_movimentacoes.map((mov, index) => (
               <View key={index} style={styles.historicoItem}>
                 <View style={styles.historicoHeader}>
@@ -290,51 +316,13 @@ const ConsultaPaciente = () => {
       </View>
 
       <View style={styles.buscaContainer}>
-        {/* Tipo de Busca */}
-        <View style={styles.tiposBusca}>
-          <TouchableOpacity
-            style={[
-              styles.tipoBusca,
-              tipoBusca === 'protocolo' && styles.tipoBuscaAtivo
-            ]}
-            onPress={() => setTipoBusca('protocolo')}
-          >
-            <Text style={[
-              styles.tipoBuscaText,
-              tipoBusca === 'protocolo' && styles.tipoBuscaTextoAtivo
-            ]}>
-              Protocolo
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.tipoBusca,
-              tipoBusca === 'cpf' && styles.tipoBuscaAtivo
-            ]}
-            onPress={() => setTipoBusca('cpf')}
-          >
-            <Text style={[
-              styles.tipoBuscaText,
-              tipoBusca === 'cpf' && styles.tipoBuscaTextoAtivo
-            ]}>
-              CPF
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Campo de Busca */}
+        {/* Campo de Busca Unificado */}
         <TextInput
           style={styles.inputBusca}
-          placeholder={
-            tipoBusca === 'protocolo' 
-              ? 'Digite o número do protocolo' 
-              : 'Digite o CPF (apenas números)'
-          }
+          placeholder="Digite o protocolo (ex: REG-2025-001) ou CPF"
           value={busca}
           onChangeText={setBusca}
-          keyboardType={tipoBusca === 'cpf' ? 'numeric' : 'default'}
-          maxLength={tipoBusca === 'cpf' ? 11 : 20}
+          autoCapitalize="characters"
         />
 
         {/* Botão de Busca */}
@@ -389,29 +377,6 @@ const styles = StyleSheet.create({
   },
   buscaContainer: {
     padding: 20,
-  },
-  tiposBusca: {
-    flexDirection: 'row',
-    marginBottom: 15,
-    backgroundColor: '#E3F2FD',
-    borderRadius: 8,
-    padding: 4,
-  },
-  tipoBusca: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 6,
-  },
-  tipoBuscaAtivo: {
-    backgroundColor: '#004A8D',
-  },
-  tipoBuscaText: {
-    color: '#004A8D',
-    fontWeight: '600',
-  },
-  tipoBuscaTextoAtivo: {
-    color: '#FFF',
   },
   inputBusca: {
     backgroundColor: '#FFF',

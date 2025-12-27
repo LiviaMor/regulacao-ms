@@ -8,6 +8,15 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 import os
+from dotenv import load_dotenv
+
+# Carregar variáveis de ambiente do .env (subir 2 níveis para encontrar backend/.env)
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), '.env')
+if os.path.exists(env_path):
+    load_dotenv(env_path)
+else:
+    # Tentar carregar do diretório atual
+    load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./regulacao.db")
 
@@ -103,6 +112,27 @@ class MedicacaoAltaComplexidade(Base):
     unidade_solicitante = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# Modelo para Memória de Curto Prazo - Histórico de Ocupação (MS-Ingestao)
+class HistoricoOcupacao(Base):
+    """
+    Armazena histórico de ocupação para cálculo de tendências
+    Usado pelo MS-Ingestao como "Memória de Curto Prazo" do sistema
+    """
+    __tablename__ = "historico_ocupacao"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    unidade_id = Column(String, index=True)  # ID/Sigla do hospital
+    unidade_nome = Column(String)  # Nome completo do hospital
+    tipo_leito = Column(String, index=True)  # UTI, ENFERMARIA, GERAL, etc.
+    ocupacao_percentual = Column(Float)  # Taxa de ocupação (0-100)
+    leitos_totais = Column(Integer)
+    leitos_ocupados = Column(Integer)
+    leitos_disponiveis = Column(Integer)
+    data_coleta = Column(DateTime, default=datetime.utcnow, index=True)
+    fonte_dados = Column(String, default="SCRAPER")  # SCRAPER, MANUAL, API, SIMULADOR
+
 
 # Dependency para obter sessão do banco
 def get_db():

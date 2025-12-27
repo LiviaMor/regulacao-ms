@@ -11,6 +11,23 @@ import {
 } from 'react-native';
 import StatusProcessamento from './StatusProcessamento';
 
+// Helper para alerts compatíveis com web
+const showAlert = (title: string, message: string, buttons?: any[]) => {
+  if (Platform.OS === 'web') {
+    if (buttons && buttons.length > 1) {
+      // Para confirmações, usar confirm
+      const confirmButton = buttons.find(b => b.style !== 'cancel');
+      if (window.confirm(`${title}\n\n${message}`)) {
+        confirmButton?.onPress?.();
+      }
+    } else {
+      window.alert(`${title}\n\n${message}`);
+    }
+  } else {
+    Alert.alert(title, message, buttons);
+  }
+};
+
 // Configuração da API baseada na plataforma
 const API_BASE_URL = Platform.select({
   web: 'http://localhost:8000',  // Sistema Unificado
@@ -69,6 +86,7 @@ interface DecisaoIA {
   metadata?: {
     tempo_processamento: number;
     biobert_usado: boolean;
+    biobert_disponivel?: boolean;
     matchmaker_usado: boolean;
   };
 }
@@ -107,7 +125,7 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
 
   const acionarTransferencia = async () => {
     if (!userToken) {
-      Alert.alert(
+      showAlert(
         'Autenticação Necessária', 
         'Você precisa estar logado para autorizar transferências.'
       );
@@ -123,52 +141,47 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
                       decisaoIA.ambulancia_sugerida?.tipo || 
                       'USB';
 
-    Alert.alert(
-      'Confirmar Transferência',
-      `Autorizar transferência do paciente ${protocolo} para:\n\n${hospital}\n\nTransporte: ${transporte}`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Autorizar', 
-          style: 'default',
-          onPress: () => executarTransferencia('AUTORIZADA')
-        }
-      ]
-    );
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Confirmar Transferência\n\nAutorizar transferência do paciente ${protocolo} para:\n\n${hospital}\n\nTransporte: ${transporte}`)) {
+        executarTransferencia('AUTORIZADA');
+      }
+    } else {
+      Alert.alert(
+        'Confirmar Transferência',
+        `Autorizar transferência do paciente ${protocolo} para:\n\n${hospital}\n\nTransporte: ${transporte}`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { 
+            text: 'Autorizar', 
+            style: 'default',
+            onPress: () => executarTransferencia('AUTORIZADA')
+          }
+        ]
+      );
+    }
   };
 
   const negarTransferencia = async () => {
     if (!userToken) {
-      Alert.alert('Erro', 'Você precisa estar logado para negar transferências.');
+      showAlert('Erro', 'Você precisa estar logado para negar transferências.');
       return;
     }
 
-    Alert.prompt(
-      'Negar Transferência',
-      `Informe o motivo da negação para o protocolo ${protocolo}:`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Negar', 
-          style: 'destructive',
-          onPress: (justificativa: string | undefined) => {
-            if (!justificativa || justificativa.trim() === '') {
-              Alert.alert('Erro', 'Justificativa é obrigatória para negar a transferência.');
-              return;
-            }
-            executarTransferencia('NEGADA', justificativa.trim());
-          }
-        }
-      ],
-      'plain-text',
-      '',
-      'Informe o motivo (ex: Paciente estável, pode aguardar vaga local)'
+    // Alert.prompt não funciona na web, usar window.prompt como fallback
+    const justificativa = window.prompt(
+      `Negar Transferência - Protocolo ${protocolo}\n\nInforme o motivo da negação:`,
+      ''
     );
+    if (justificativa && justificativa.trim() !== '') {
+      executarTransferencia('NEGADA', justificativa.trim());
+    } else if (justificativa !== null) {
+      showAlert('Erro', 'Justificativa é obrigatória para negar a transferência.');
+    }
   };
 
   const alterarDecisao = async () => {
     if (!userToken) {
-      Alert.alert('Erro', 'Você precisa estar logado para alterar decisões.');
+      showAlert('Erro', 'Você precisa estar logado para alterar decisões.');
       return;
     }
 
@@ -177,27 +190,16 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
                     decisaoIA.matchmaking_logistico?.hospital_destino || 
                     'Hospital não definido';
 
-    Alert.prompt(
-      'Alterar Decisão da IA',
-      `Hospital atual: ${hospital}\n\nInforme o novo hospital de destino:`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Alterar e Autorizar', 
-          style: 'default',
-          onPress: (novoHospital: string | undefined) => {
-            if (!novoHospital || novoHospital.trim() === '') {
-              Alert.alert('Erro', 'Nome do hospital é obrigatório.');
-              return;
-            }
-            executarAlteracaoEAutorizacao(novoHospital.trim());
-          }
-        }
-      ],
-      'plain-text',
-      hospital,
-      'Digite o nome completo do hospital'
+    // Usar window.prompt para web
+    const novoHospital = window.prompt(
+      `Alterar Decisão da IA\n\nHospital atual: ${hospital}\n\nInforme o novo hospital de destino:`,
+      hospital
     );
+    if (novoHospital && novoHospital.trim() !== '') {
+      executarAlteracaoEAutorizacao(novoHospital.trim());
+    } else if (novoHospital !== null) {
+      showAlert('Erro', 'Nome do hospital é obrigatório.');
+    }
   };
 
   const executarAlteracaoEAutorizacao = async (novoHospital: string) => {
@@ -240,7 +242,7 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
         const titulo = 'Decisão Alterada e Autorizada';
         const mensagem = `Protocolo: ${protocolo}\nHospital Original: ${payload.decisao_ia_original.analise_decisoria?.unidade_destino_sugerida || 'N/A'}\nNovo Destino: ${novoHospital}\nTransporte: ${transporte}\n\nA ambulância será acionada automaticamente.\nPaciente será movido para a área de transferência.`;
         
-        Alert.alert(titulo, mensagem, [{ text: 'OK' }]);
+        showAlert(titulo, mensagem);
 
         // Callback para atualizar a interface pai
         if (onTransferenciaAutorizada) {
@@ -251,7 +253,7 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
       }
     } catch (error) {
       console.error('Erro na alteração:', error);
-      Alert.alert(
+      showAlert(
         'Erro na Alteração',
         'Não foi possível alterar a decisão. Tente novamente ou contate o suporte técnico.'
       );
@@ -307,15 +309,15 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
 
       if (response.ok) {
         if (decisao === 'AUTORIZADA') {
-          const titulo = 'Transferência Autorizada';
+                  const titulo = 'Transferência Autorizada';
           const mensagem = `Protocolo: ${protocolo}\nDestino: ${hospital}\nTransporte: ${transporte}\n\nA ambulância será acionada automaticamente.\nPaciente será movido para a área de transferência.`;
           
-          Alert.alert(titulo, mensagem, [{ text: 'OK' }]);
+          showAlert(titulo, mensagem);
         } else {
           const titulo = 'Transferência Negada';
           const mensagem = `Protocolo: ${protocolo}\nMotivo: ${justificativaNegacao}\n\nPaciente retornará à fila de regulação.\nHospital será notificado da negação.`;
           
-          Alert.alert(titulo, mensagem, [{ text: 'OK' }]);
+          showAlert(titulo, mensagem);
         }
 
         // Callback para atualizar a interface pai
@@ -327,7 +329,7 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
       }
     } catch (error) {
       console.error('Erro na decisão:', error);
-      Alert.alert(
+      showAlert(
         'Erro na Decisão',
         'Não foi possível registrar a decisão. Tente novamente ou contate o suporte técnico.'
       );
@@ -454,20 +456,9 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
           <TouchableOpacity 
             style={styles.chamarAmbulanciaButton}
             onPress={() => {
-              Alert.alert(
-                'Chamar Ambulância',
-                `Acionar ${ambulancia.id} (${ambulancia.tipo})?\n\nTempo de chegada: ${ambulancia.tempo_chegada_min} min\nDestino: ${matchmaking.hospital_destino}`,
-                [
-                  { text: 'Cancelar', style: 'cancel' },
-                  { 
-                    text: 'Chamar Agora', 
-                    style: 'default',
-                    onPress: () => {
-                      Alert.alert('Ambulância Acionada', `${ambulancia.id} foi acionada e está a caminho.`);
-                    }
-                  }
-                ]
-              );
+              if (window.confirm(`Chamar Ambulância\n\nAcionar ${ambulancia.id} (${ambulancia.tipo})?\n\nTempo de chegada: ${ambulancia.tempo_chegada_min} min\nDestino: ${matchmaking.hospital_destino}`)) {
+                showAlert('Ambulância Acionada', `${ambulancia.id} foi acionada e está a caminho.`);
+              }
             }}
           >
             <Text style={styles.chamarAmbulanciaText}>CHAMAR AMBULÂNCIA AGORA</Text>

@@ -1,13 +1,424 @@
 #!/usr/bin/env python3
 """
-PIPELINE INTELIGENTE DE HOSPITAIS DE GOIÁS
+PIPELINE INTELIGENTE DE HOSPITAIS DE GOIÁS - RAG READY
 Sistema de IA para encaminhamento correto baseado em especialidades reais
+Preparado para integração com Llama 3 e outros LLMs (RAG - Retrieval-Augmented Generation)
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 import logging
+import json
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+class PipelineDecisaoRegulacao:
+    """
+    Extensão do Pipeline para servir de base de conhecimento (RAG Ready)
+    para o Llama 3 e outros LLMs no processo de regulação médica
+    """
+    
+    def __init__(self, pipeline_hospitais: 'PipelineHospitaisGoias'):
+        self.pipeline = pipeline_hospitais
+        self.contexto_cache = {}
+        
+    def formatar_para_ia(self, hospital: HospitalGoias) -> Dict[str, Any]:
+        """
+        Transforma o objeto Hospital em uma 'ficha técnica' estruturada para o LLM
+        
+        Returns:
+            Dict com informações estruturadas do hospital para prompt injection
+        """
+        return {
+            "hospital": hospital.nome,
+            "cidade": hospital.cidade,
+            "perfil_clinico": hospital.tipo,
+            "nivel_complexidade": hospital.capacidade,
+            "especialidades_disponiveis": hospital.especialidades,
+            "restricoes_severas": self.pipeline.criterios_exclusao.get(hospital.nome, []),
+            "score_disponibilidade": hospital.score_disponibilidade,
+            "observacoes_clinicas": hospital.observacoes,
+            "adequacao_casos": self._gerar_adequacao_casos(hospital)
+        }
+    
+    def _gerar_adequacao_casos(self, hospital: HospitalGoias) -> Dict[str, str]:
+        """Gera descrição de adequação para diferentes tipos de casos"""
+        adequacao = {}
+        
+        # Casos de trauma
+        if "TRAUMATOLOGIA" in hospital.especialidades:
+            adequacao["trauma"] = "Adequado para casos de trauma e urgência"
+        elif hospital.nome == "HOSPITAL DE URGENCIAS DE GOIAS DR VALDEMIRO CRUZ HUGO":
+            adequacao["trauma"] = "ESPECIALIZADO em trauma - PRIMEIRA ESCOLHA para emergências traumáticas"
+        
+        # Casos cardiológicos
+        if "CARDIOLOGIA" in hospital.especialidades:
+            if "CARDIOLOGIA_INTERVENCIONISTA" in hospital.especialidades:
+                adequacao["cardiologia"] = "Cardiologia completa com hemodinâmica e intervenção"
+            else:
+                adequacao["cardiologia"] = "Cardiologia clínica disponível"
+        
+        # Casos neurológicos
+        if "NEUROLOGIA" in hospital.especialidades:
+            if "NEUROCIRURGIA" in hospital.especialidades:
+                adequacao["neurologia"] = "Neurologia completa com neurocirurgia"
+            else:
+                adequacao["neurologia"] = "Neurologia clínica disponível"
+        
+        # Casos ortopédicos NÃO traumáticos
+        if "ORTOPEDIA" in hospital.especialidades and hospital.nome != "HOSPITAL DE URGENCIAS DE GOIAS DR VALDEMIRO CRUZ HUGO":
+            adequacao["ortopedia_eletiva"] = "Adequado para casos ortopédicos eletivos (dor lombar, artrose, etc.)"
+        
+        # Casos obstétricos
+        if "OBSTETRICIA" in hospital.especialidades:
+            if hospital.nome == "HOSPITAL ESTADUAL MATERNO INFANTIL DR JURANDIR DO NASCIMENTO":
+                adequacao["obstetricia"] = "ESPECIALIZADO materno-infantil - PRIMEIRA ESCOLHA para gestantes"
+            else:
+                adequacao["obstetricia"] = "Obstetrícia disponível"
+        
+        # Casos infecciosos
+        if hospital.nome == "HOSPITAL DE DOENCAS TROPICAIS DR ANUAR AUAD HDT":
+            adequacao["infectologia"] = "ESPECIALIZADO em doenças infecciosas e tropicais - ÚNICA OPÇÃO para casos infecciosos complexos"
+        
+        return adequacao
+    
+    def gerar_contexto_hospitais(self, especialidade_requerida: str, 
+                                cid: str = None, tipo_caso: str = None) -> str:
+        """
+        Filtra e ordena os hospitais para enviar apenas o relevante ao Prompt do LLM
+        
+        Args:
+            especialidade_requerida: Especialidade médica necessária
+            cid: Código CID-10 para contexto adicional
+            tipo_caso: Tipo de caso (TRAUMA, EMERGENCIA, ELETIVO, etc.)
+            
+        Returns:
+            JSON string formatado para prompt injection no LLM
+        """
+        
+        # Cache key para otimização
+        cache_key = f"{especialidade_requerida}_{cid}_{tipo_caso}"
+        if cache_key in self.contexto_cache:
+            return self.contexto_cache[cache_key]
+        
+        # Busca hospitais que possuem a especialidade
+        filtrados = []
+        for hospital in self.pipeline.hospitais:
+            if especialidade_requerida.upper() in hospital.especialidades:
+                filtrados.append(hospital)
+            # Busca também por especialidades relacionadas
+            elif self._especialidade_relacionada(especialidade_requerida, hospital.especialidades):
+                filtrados.append(hospital)
+        
+        # Ordena por adequação ao caso
+        filtrados = self._ordenar_por_adequacao(filtrados, especialidade_requerida, cid, tipo_caso)
+        
+        # Formatar para IA
+        contexto_hospitais = [self.formatar_para_ia(h) for h in filtrados[:5]]  # Top 5 mais adequados
+        
+        # Adicionar metadados do contexto
+        contexto_completo = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "especialidade_solicitada": especialidade_requerida,
+            "cid_contexto": cid,
+            "tipo_caso": tipo_caso,
+            "total_hospitais_disponiveis": len(filtrados),
+            "hospitais_recomendados": contexto_hospitais,
+            "criterios_exclusao_gerais": {
+                "hugo_nao_eletivo": "HOSPITAL DE URGENCIAS (HUGO) NÃO atende casos eletivos ou baixa complexidade",
+                "materno_infantil_restricao": "Hospital Materno-Infantil APENAS para mulheres grávidas e crianças",
+                "hdt_apenas_infeccioso": "HDT APENAS para doenças infecciosas"
+            },
+            "instrucoes_ia": self._gerar_instrucoes_ia(especialidade_requerida, tipo_caso)
+        }
+        
+        resultado = json.dumps(contexto_completo, indent=2, ensure_ascii=False)
+        
+        # Cache do resultado
+        self.contexto_cache[cache_key] = resultado
+        
+        return resultado
+    
+    def _especialidade_relacionada(self, especialidade: str, especialidades_hospital: List[str]) -> bool:
+        """Verifica se há especialidades relacionadas"""
+        relacionamentos = {
+            "CARDIOLOGIA": ["CARDIOLOGIA_INTERVENCIONISTA", "HEMODINAMICA", "UTI_CARDIOLOGICA"],
+            "NEUROLOGIA": ["NEUROCIRURGIA", "AVC", "EPILEPSIA"],
+            "ORTOPEDIA": ["TRAUMATOLOGIA", "ORTOPEDIA_TRAUMA", "CIRURGIA_ORTOPEDICA"],
+            "CIRURGIA": ["CIRURGIA_GERAL", "CIRURGIA_VASCULAR", "CIRURGIA_CARDIOVASCULAR"],
+            "PEDIATRIA": ["NEONATOLOGIA", "UTI_PEDIATRICA", "CARDIOLOGIA_PEDIATRICA"],
+            "OBSTETRICIA": ["GINECOLOGIA", "ALTO_RISCO_OBSTETRICO"],
+            "INFECTOLOGIA": ["DOENCAS_TROPICAIS", "HIV_AIDS", "TUBERCULOSE"]
+        }
+        
+        especialidade_upper = especialidade.upper()
+        if especialidade_upper in relacionamentos:
+            return any(rel in especialidades_hospital for rel in relacionamentos[especialidade_upper])
+        
+        return False
+    
+    def _ordenar_por_adequacao(self, hospitais: List[HospitalGoias], 
+                              especialidade: str, cid: str, tipo_caso: str) -> List[HospitalGoias]:
+        """Ordena hospitais por adequação ao caso específico"""
+        
+        def calcular_score_adequacao(hospital: HospitalGoias) -> int:
+            score = 0
+            
+            # Score base por tipo de hospital
+            if hospital.tipo == "REFERENCIA":
+                score += 10
+            elif hospital.tipo == "ESPECIALIZADO":
+                score += 15  # Especializado é melhor para sua área
+            elif hospital.tipo == "REGIONAL":
+                score += 5
+            
+            # Score por capacidade
+            if hospital.capacidade == "ALTA":
+                score += 10
+            elif hospital.capacidade == "MEDIA":
+                score += 5
+            
+            # Score por especialidade específica
+            if especialidade.upper() in hospital.especialidades:
+                score += 20
+            
+            # Bonus/Penalidade por tipo de caso
+            if tipo_caso == "TRAUMA":
+                if "TRAUMATOLOGIA" in hospital.especialidades:
+                    score += 25
+                if hospital.nome == "HOSPITAL DE URGENCIAS DE GOIAS DR VALDEMIRO CRUZ HUGO":
+                    score += 30  # HUGO é THE BEST para trauma
+            
+            elif tipo_caso == "ORTOPEDIA_ELETIVA":
+                if hospital.nome == "HOSPITAL DE URGENCIAS DE GOIAS DR VALDEMIRO CRUZ HUGO":
+                    score -= 50  # HUGO NÃO atende eletivo
+                elif "ORTOPEDIA" in hospital.especialidades:
+                    score += 20
+            
+            elif tipo_caso == "OBSTETRICIA":
+                if hospital.nome == "HOSPITAL ESTADUAL MATERNO INFANTIL DR JURANDIR DO NASCIMENTO":
+                    score += 30  # Materno-infantil é THE BEST
+            
+            elif tipo_caso == "INFECTOLOGIA":
+                if hospital.nome == "HOSPITAL DE DOENCAS TROPICAIS DR ANUAR AUAD HDT":
+                    score += 30  # HDT é THE BEST para infecção
+            
+            # Penalidades por CID específicos
+            if cid and cid.startswith("M54"):  # Dor lombar
+                if hospital.nome == "HOSPITAL DE URGENCIAS DE GOIAS DR VALDEMIRO CRUZ HUGO":
+                    score -= 100  # NUNCA mandar dor lombar para HUGO
+            
+            return score
+        
+        return sorted(hospitais, key=calcular_score_adequacao, reverse=True)
+    
+    def _gerar_instrucoes_ia(self, especialidade: str, tipo_caso: str) -> Dict[str, str]:
+        """Gera instruções específicas para o LLM baseado no contexto"""
+        
+        instrucoes = {
+            "objetivo": "Selecionar o hospital mais adequado baseado na especialidade, tipo de caso e restrições",
+            "prioridade_1": "Sempre respeitar as restrições severas de cada hospital",
+            "prioridade_2": "Hospitais especializados têm prioridade em sua área de expertise",
+            "prioridade_3": "Considerar capacidade e disponibilidade logística"
+        }
+        
+        # Instruções específicas por tipo de caso
+        if tipo_caso == "TRAUMA":
+            instrucoes["caso_trauma"] = "Para casos de trauma, HUGO é a primeira escolha. Outros hospitais com traumatologia são alternativas."
+        
+        elif tipo_caso == "ORTOPEDIA_ELETIVA":
+            instrucoes["caso_ortopedia_eletiva"] = "Para casos ortopédicos eletivos (dor lombar, artrose), NUNCA escolher HUGO. Preferir hospitais regionais com ortopedia."
+        
+        elif tipo_caso == "OBSTETRICIA":
+            instrucoes["caso_obstetricia"] = "Para gestantes, Hospital Materno-Infantil é primeira escolha. Outros com obstetrícia são alternativas."
+        
+        elif tipo_caso == "INFECTOLOGIA":
+            instrucoes["caso_infectologia"] = "Para doenças infecciosas, HDT é a ÚNICA opção especializada. Outros hospitais apenas para casos simples."
+        
+        # Instruções por especialidade
+        if "CARDIOLOGIA" in especialidade.upper():
+            instrucoes["cardiologia"] = "Para casos cardiológicos, preferir hospitais com hemodinâmica se for emergência."
+        
+        elif "NEUROLOGIA" in especialidade.upper():
+            instrucoes["neurologia"] = "Para casos neurológicos, verificar se precisa de neurocirurgia."
+        
+        return instrucoes
+    
+    def gerar_prompt_completo_llm(self, dados_paciente: Dict[str, Any], 
+                                 especialidade: str, cid: str = None) -> str:
+        """
+        Gera prompt completo para o LLM com contexto de hospitais e dados do paciente
+        
+        Args:
+            dados_paciente: Dados do paciente (protocolo, sintomas, etc.)
+            especialidade: Especialidade médica necessária
+            cid: Código CID-10
+            
+        Returns:
+            Prompt formatado para o LLM
+        """
+        
+        # Classificar tipo de caso
+        tipo_caso = self._classificar_tipo_caso_rag(cid, dados_paciente.get('prontuario_texto', ''))
+        
+        # Gerar contexto de hospitais
+        contexto_hospitais = self.gerar_contexto_hospitais(especialidade, cid, tipo_caso)
+        
+        # Montar prompt estruturado
+        prompt = f"""
+# SISTEMA DE REGULAÇÃO MÉDICA - SES GOIÁS
+
+## MISSÃO
+Você é um especialista em regulação médica do Sistema Único de Saúde de Goiás. Sua missão é selecionar o hospital mais adequado para cada paciente, considerando especialidades, capacidade, restrições e logística.
+
+## DADOS DO PACIENTE
+```json
+{json.dumps(dados_paciente, indent=2, ensure_ascii=False)}
+```
+
+## CONTEXTO DE HOSPITAIS DISPONÍVEIS
+```json
+{contexto_hospitais}
+```
+
+## INSTRUÇÕES CRÍTICAS
+1. **SEMPRE respeitar as restrições severas** de cada hospital
+2. **HUGO (Hospital de Urgências)** é APENAS para trauma e urgência - NUNCA para casos eletivos
+3. **Hospital Materno-Infantil** é APENAS para mulheres grávidas e crianças
+4. **HDT** é APENAS para doenças infecciosas
+5. Para **dor lombar** e casos ortopédicos eletivos, NUNCA escolher HUGO
+
+## FORMATO DE RESPOSTA OBRIGATÓRIO
+Responda APENAS em JSON no seguinte formato:
+```json
+{{
+    "hospital_escolhido": "Nome completo do hospital",
+    "justificativa_tecnica": "Explicação detalhada da escolha baseada nas especialidades e adequação",
+    "score_adequacao": 9,
+    "tipo_transporte": "USA ou USB",
+    "observacoes_clinicas": "Observações específicas para o caso",
+    "restricoes_verificadas": ["lista", "de", "restricoes", "consideradas"]
+}}
+```
+
+## ANÁLISE SOLICITADA
+Com base nos dados do paciente e no contexto de hospitais disponíveis, selecione o hospital mais adequado e forneça a resposta no formato JSON especificado.
+"""
+        
+        return prompt
+    
+    def _classificar_tipo_caso_rag(self, cid: str, sintomas: str) -> str:
+        """Classifica o tipo de caso para RAG (mais detalhado que a versão original)"""
+        
+        if not cid:
+            return "CLINICO_GERAL"
+        
+        # Casos de trauma (códigos S e T)
+        if any(cid.startswith(trauma) for trauma in ["S0", "S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "T0"]):
+            return "TRAUMA"
+        
+        # Casos de emergência cardiológica
+        if cid.startswith(("I21", "I46", "I20", "I50")):
+            return "EMERGENCIA_CARDIOLOGICA"
+        
+        # Casos de emergência neurológica
+        if cid.startswith(("I61", "I63", "G93", "S06")):
+            return "EMERGENCIA_NEUROLOGICA"
+        
+        # Casos obstétricos
+        if cid.startswith("O"):
+            return "OBSTETRICIA"
+        
+        # Casos pediátricos
+        if cid.startswith("P"):
+            return "PEDIATRIA"
+        
+        # Casos infecciosos
+        if cid.startswith(("A", "B")):
+            return "INFECTOLOGIA"
+        
+        # Casos ortopédicos não traumáticos (M - musculoesquelético)
+        if cid.startswith("M"):
+            # Verificar se há menção de trauma nos sintomas
+            if any(palavra in sintomas.lower() for palavra in ["trauma", "acidente", "queda", "fratura"]):
+                return "TRAUMA"
+            else:
+                return "ORTOPEDIA_ELETIVA"
+        
+        # Casos respiratórios
+        if cid.startswith("J"):
+            return "PNEUMOLOGIA"
+        
+        # Casos renais
+        if cid.startswith("N"):
+            return "NEFROLOGIA"
+        
+        # Casos cirúrgicos gerais
+        if cid.startswith("K"):
+            return "CIRURGIA_GERAL"
+        
+        return "CLINICO_GERAL"
+    
+    def processar_resposta_llm(self, resposta_llm: str) -> Dict[str, Any]:
+        """
+        Processa e valida a resposta do LLM
+        
+        Args:
+            resposta_llm: Resposta em JSON do LLM
+            
+        Returns:
+            Dict com resposta processada e validada
+        """
+        try:
+            # Tentar extrair JSON da resposta
+            if "```json" in resposta_llm:
+                json_start = resposta_llm.find("```json") + 7
+                json_end = resposta_llm.find("```", json_start)
+                json_str = resposta_llm[json_start:json_end].strip()
+            else:
+                json_str = resposta_llm.strip()
+            
+            resposta = json.loads(json_str)
+            
+            # Validar campos obrigatórios
+            campos_obrigatorios = ["hospital_escolhido", "justificativa_tecnica", "score_adequacao"]
+            for campo in campos_obrigatorios:
+                if campo not in resposta:
+                    raise ValueError(f"Campo obrigatório '{campo}' não encontrado na resposta")
+            
+            # Validar se hospital existe
+            hospital_escolhido = resposta["hospital_escolhido"]
+            hospital_valido = any(h.nome == hospital_escolhido for h in self.pipeline.hospitais)
+            
+            if not hospital_valido:
+                logger.warning(f"Hospital '{hospital_escolhido}' não encontrado na base. Usando fallback.")
+                resposta["hospital_escolhido"] = "HOSPITAL ESTADUAL DR ALBERTO RASSI HGG"
+                resposta["justificativa_tecnica"] += " [FALLBACK: Hospital original não encontrado]"
+            
+            # Adicionar metadados
+            resposta["processado_em"] = datetime.utcnow().isoformat()
+            resposta["fonte"] = "LLM_RAG_Pipeline"
+            resposta["validado"] = True
+            
+            return resposta
+            
+        except Exception as e:
+            logger.error(f"Erro ao processar resposta do LLM: {e}")
+            
+            # Fallback em caso de erro
+            return {
+                "hospital_escolhido": "HOSPITAL ESTADUAL DR ALBERTO RASSI HGG",
+                "justificativa_tecnica": f"Erro no processamento da resposta do LLM: {str(e)}. Usando hospital de referência como fallback.",
+                "score_adequacao": 5,
+                "tipo_transporte": "USB",
+                "observacoes_clinicas": "Análise manual necessária devido a erro no LLM",
+                "restricoes_verificadas": [],
+                "processado_em": datetime.utcnow().isoformat(),
+                "fonte": "FALLBACK_Pipeline",
+                "validado": False,
+                "erro": str(e)
+            }
+
 
 class HospitalGoias:
     """Classe para representar um hospital com suas especialidades"""
@@ -21,6 +432,7 @@ class HospitalGoias:
         self.capacidade = capacidade  # ALTA, MEDIA, BAIXA
         self.observacoes = observacoes
         self.score_disponibilidade = 10  # Simulado - em produção viria de API real
+
 
 class PipelineHospitaisGoias:
     """Pipeline inteligente para seleção de hospitais em Goiás"""
@@ -504,6 +916,9 @@ class PipelineHospitaisGoias:
 # Instância global do pipeline
 pipeline_hospitais = PipelineHospitaisGoias()
 
+# Instância global do pipeline RAG
+pipeline_rag = PipelineDecisaoRegulacao(pipeline_hospitais)
+
 def selecionar_hospital_goias(cid: str, especialidade: str, sintomas: str, 
                             idade: int = None, sexo: str = None, 
                             gravidade: str = "MODERADA") -> Tuple[str, str]:
@@ -528,10 +943,62 @@ def selecionar_hospital_goias(cid: str, especialidade: str, sintomas: str,
     
     return hospital, justificativa
 
+def gerar_contexto_rag_llm(especialidade: str, cid: str = None, 
+                          dados_paciente: Dict[str, Any] = None) -> str:
+    """
+    Função para gerar contexto RAG para LLMs (Llama 3, etc.)
+    
+    Args:
+        especialidade: Especialidade médica necessária
+        cid: Código CID-10 (opcional)
+        dados_paciente: Dados completos do paciente (opcional)
+    
+    Returns:
+        JSON string formatado para prompt injection no LLM
+    """
+    
+    # Classificar tipo de caso se temos dados do paciente
+    tipo_caso = None
+    if dados_paciente and cid:
+        tipo_caso = pipeline_rag._classificar_tipo_caso_rag(
+            cid, dados_paciente.get('prontuario_texto', '')
+        )
+    
+    return pipeline_rag.gerar_contexto_hospitais(especialidade, cid, tipo_caso)
+
+def gerar_prompt_completo_llm(dados_paciente: Dict[str, Any], 
+                             especialidade: str, cid: str = None) -> str:
+    """
+    Função para gerar prompt completo para LLMs
+    
+    Args:
+        dados_paciente: Dados completos do paciente
+        especialidade: Especialidade médica necessária
+        cid: Código CID-10 (opcional)
+    
+    Returns:
+        Prompt completo formatado para o LLM
+    """
+    
+    return pipeline_rag.gerar_prompt_completo_llm(dados_paciente, especialidade, cid)
+
+def processar_resposta_llm(resposta_llm: str) -> Dict[str, Any]:
+    """
+    Função para processar resposta do LLM
+    
+    Args:
+        resposta_llm: Resposta em JSON do LLM
+    
+    Returns:
+        Dict com resposta processada e validada
+    """
+    
+    return pipeline_rag.processar_resposta_llm(resposta_llm)
+
 if __name__ == "__main__":
     # Testes do pipeline
-    print("🏥 PIPELINE DE HOSPITAIS DE GOIÁS - TESTE")
-    print("=" * 50)
+    print("🏥 PIPELINE DE HOSPITAIS DE GOIÁS - RAG READY - TESTE")
+    print("=" * 60)
     
     casos_teste = [
         {
@@ -557,6 +1024,7 @@ if __name__ == "__main__":
         }
     ]
     
+    print("\n🧪 TESTE PIPELINE TRADICIONAL:")
     for caso in casos_teste:
         print(f"\n📋 {caso['nome']}")
         hospital, justificativa = selecionar_hospital_goias(
@@ -564,3 +1032,55 @@ if __name__ == "__main__":
         )
         print(f"🏥 Hospital: {hospital}")
         print(f"💡 Justificativa: {justificativa}")
+    
+    print("\n" + "=" * 60)
+    print("🤖 TESTE RAG PARA LLM:")
+    
+    # Teste de contexto RAG
+    print("\n📊 Contexto RAG para ORTOPEDIA:")
+    contexto_ortopedia = gerar_contexto_rag_llm("ORTOPEDIA", "M54.5")
+    print("✅ Contexto gerado com sucesso")
+    
+    print("\n📊 Contexto RAG para NEUROCIRURGIA:")
+    contexto_neuro = gerar_contexto_rag_llm("NEUROCIRURGIA", "S06.9")
+    print("✅ Contexto gerado com sucesso")
+    
+    # Teste de prompt completo
+    print("\n📝 Prompt Completo para LLM:")
+    dados_paciente_teste = {
+        "protocolo": "TEST-RAG-001",
+        "especialidade": "ORTOPEDIA",
+        "cid": "M54.5",
+        "cid_desc": "Dor lombar",
+        "prontuario_texto": "Paciente com dor lombar crônica há 6 meses, sem sinais de trauma",
+        "historico_paciente": "Histórico de dor lombar recorrente",
+        "prioridade_descricao": "Normal"
+    }
+    
+    prompt_completo = gerar_prompt_completo_llm(dados_paciente_teste, "ORTOPEDIA", "M54.5")
+    print("✅ Prompt completo gerado com sucesso")
+    print(f"📏 Tamanho do prompt: {len(prompt_completo)} caracteres")
+    
+    # Teste de processamento de resposta
+    print("\n🔄 Teste de Processamento de Resposta LLM:")
+    resposta_simulada = '''```json
+{
+    "hospital_escolhido": "HOSPITAL ESTADUAL DR ALBERTO RASSI HGG",
+    "justificativa_tecnica": "Hospital de referência com ortopedia disponível, adequado para casos eletivos como dor lombar",
+    "score_adequacao": 8,
+    "tipo_transporte": "USB",
+    "observacoes_clinicas": "Caso eletivo, não requer urgência",
+    "restricoes_verificadas": ["hugo_nao_eletivo"]
+}
+```'''
+    
+    resposta_processada = processar_resposta_llm(resposta_simulada)
+    print("✅ Resposta processada com sucesso")
+    print(f"🏥 Hospital escolhido: {resposta_processada['hospital_escolhido']}")
+    print(f"⭐ Score: {resposta_processada['score_adequacao']}")
+    
+    print("\n" + "=" * 60)
+    print("🎉 PIPELINE RAG READY FUNCIONANDO PERFEITAMENTE!")
+    print("🔗 Pronto para integração com Llama 3, GPT-4, Claude, etc.")
+    print("📚 Base de conhecimento estruturada para regulação médica")
+    print("=" * 60)
