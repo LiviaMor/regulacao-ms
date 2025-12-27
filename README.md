@@ -1,4 +1,4 @@
-# 🏥 Sistema de Regulação Autônoma SES-GO
+# Sistema de Regulação Autônoma SES-GO
 ### Solução de Inteligência Artificial para Otimização da Regulação Médica
 
 <div align="center">
@@ -11,30 +11,30 @@
 
 ---
 
-## 🎯 **Apresentação para o ABERTO de IA de Goiás**
+## **Apresentação para o ABERTO de IA de Goiás**
 
 Este sistema representa uma **solução inovadora de Inteligência Artificial** desenvolvida para revolucionar o processo de regulação médica da **Secretaria de Estado da Saúde de Goiás (SES-GO)**. 
 
-### 🚀 **Problema Resolvido**
+### **Problema Resolvido**
 - **Agilidade**: Redução do tempo de análise de prontuários de horas para minutos
 - **Precisão**: IA especializada em análise médica com BioBERT + Llama3
 - **Transparência**: Dashboard público em tempo real da situação hospitalar
 - **Eficiência**: Automatização do fluxo de regulação com validação humana
 
-### 💡 **Inovação Tecnológica**
+### **Inovação Tecnológica**
 Sistema pioneiro que combina **processamento de linguagem natural médica** com **análise preditiva** para apoiar decisões críticas de regulação hospitalar, mantendo o regulador humano no centro do processo decisório.
 
 ---
 
-## 🏗️ **Arquitetura da Solução**
+## **Arquitetura da Solução**
 
-### 🔬 **Inteligência Artificial**
+### **Inteligência Artificial**
 - **BioBERT**: Modelo especializado em textos médicos para extração de entidades clínicas
 - **Llama3**: LLM para análise contextual e geração de recomendações estruturadas
 - **Prompt Engineering**: Templates otimizados para decisões de regulação médica
 - **Validação Humana**: Interface intuitiva para aprovação/ajuste das decisões da IA
 
-### 🏢 **Backend - Microserviços**
+### **Backend - Microserviços**
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   MS-Ingestion  │    │ MS-Intelligence │    │  MS-Logistics   │
@@ -45,7 +45,7 @@ Sistema pioneiro que combina **processamento de linguagem natural médica** com 
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-### 📱 **Frontend - Multiplataforma**
+### **Frontend - Multiplataforma**
 - **React Native + Expo**: Código único para Web, iOS e Android
 - **Dashboard Público**: Transparência total da situação hospitalar
 - **Área Hospitalar**: Interface para solicitações e upload de prontuários
@@ -53,7 +53,7 @@ Sistema pioneiro que combina **processamento de linguagem natural médica** com 
 
 ---
 
-## 🛠️ **Stack Tecnológica**
+## **Stack Tecnológica**
 
 ### **Backend**
 - **Python 3.11+** - Linguagem principal
@@ -84,9 +84,9 @@ Sistema pioneiro que combina **processamento de linguagem natural médica** com 
 
 ---
 
-## 🚀 **Como Executar a Aplicação**
+## **Como Executar a Aplicação**
 
-### **📋 Pré-requisitos**
+### **Pré-requisitos**
 ```bash
 # Verificar versões
 python --version  # >= 3.8
@@ -94,7 +94,7 @@ node --version    # >= 16
 npm --version     # >= 8
 ```
 
-### **⚡ Instalação Rápida (Desenvolvimento)**
+### **Instalação Rápida (Desenvolvimento)**
 
 #### **1. Clone o Repositório**
 ```bash
@@ -127,7 +127,7 @@ npm start
 python test_frontend_backend.py
 ```
 
-### **🐳 Instalação Completa (Produção)**
+### **Instalação Completa (Produção)**
 
 #### **1. Docker Compose (Recomendado)**
 ```bash
@@ -153,22 +153,22 @@ python start_complete_system.py
 
 ---
 
-## 📊 **Demonstração da Solução**
+## **Demonstração da Solução**
 
-### **🔐 Credenciais de Demonstração**
+### **Credenciais de Demonstração**
 ```
 Email: admin@sesgo.gov.br
 Senha: admin123
 Tipo: ADMIN (acesso completo)
 ```
 
-### **🌐 Endpoints Principais**
+### **Endpoints Principais**
 - **API Principal**: http://localhost:8000
 - **Documentação**: http://localhost:8000/docs
 - **Dashboard Público**: http://localhost:8000/dashboard/leitos
 - **Health Check**: http://localhost:8000/health
 
-### **📱 Funcionalidades Demonstráveis**
+### **Funcionalidades Demonstráveis**
 
 #### **1. Dashboard Público**
 - Visualização em tempo real de **766 pacientes em regulação**
@@ -200,28 +200,28 @@ Tipo: ADMIN (acesso completo)
 
 ---
 
-## 📈 **Impacto e Resultados Esperados**
+## **Impacto e Resultados Esperados**
 
-### **⏱️ Redução de Tempo**
+### **Redução de Tempo**
 - **Análise de prontuário**: De 30-60 min → 2-5 min
 - **Tomada de decisão**: De 2-4 horas → 15-30 min
 - **Processamento da fila**: Redução de 70% no tempo médio
 
-### **🎯 Melhoria na Precisão**
+### **Melhoria na Precisão**
 - **Padronização**: Critérios uniformes baseados em evidências
 - **Redução de erros**: Validação automática de dados
 - **Rastreabilidade**: Histórico completo de decisões
 
-### **📊 Transparência**
+### **Transparência**
 - **Dashboard público**: Cidadãos podem acompanhar a situação
 - **Métricas em tempo real**: Gestores têm visibilidade total
 - **Relatórios automáticos**: Dados para tomada de decisão estratégica
 
 ---
 
-## 🔬 **Detalhes Técnicos da IA**
+## **Detalhes Técnicos da IA**
 
-### **🧠 Processamento de Linguagem Natural**
+### **Processamento de Linguagem Natural**
 ```python
 # Exemplo de processamento com BioBERT
 def extrair_entidades_biobert(prontuario_texto: str) -> str:
@@ -231,7 +231,7 @@ def extrair_entidades_biobert(prontuario_texto: str) -> str:
     return analise_clinica_estruturada
 ```
 
-### **🤖 Geração de Decisões**
+### **Geração de Decisões**
 ```python
 # Prompt estruturado para Llama3
 prompt = f"""
@@ -256,15 +256,15 @@ RESPOSTA EM JSON:
 
 ---
 
-## 🎯 **Roadmap e Próximos Passos**
+## **Roadmap e Próximos Passos**
 
-### **📅 Fase 1 - MVP (Atual)**
+### **Fase 1 - MVP (Atual)**
 - ✅ Backend com microserviços
 - ✅ Frontend multiplataforma
 - ✅ IA básica com BioBERT + Llama3
 - ✅ Dashboard público
 
-### **📅 Fase 2 - Expansão (3-6 meses)**
+### **Fase 2 - Expansão (3-6 meses)**
 - 🔄 OCR para prontuários digitalizados
 - 🔄 Integração com sistemas hospitalares
 - 🔄 Métricas avançadas e relatórios

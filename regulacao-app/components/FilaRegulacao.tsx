@@ -14,7 +14,7 @@ import CardDecisaoIA from './CardDecisaoIA';
 
 // Configuração da API baseada na plataforma
 const API_BASE_URL = Platform.select({
-  web: 'http://localhost:8000',
+  web: 'http://localhost:8000',  // Sistema Unificado
   default: 'http://10.0.2.2:8000' // Android Emulator
 });
 
@@ -42,7 +42,8 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
 
   const fetchFila = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/fila-regulacao`, {
+      // Buscar pacientes que foram inseridos pelo hospital e aguardam regulação
+      const response = await fetch(`${API_BASE_URL}/pacientes-hospital-aguardando`, {
         headers: {
           'Authorization': `Bearer ${userToken}`,
           'Content-Type': 'application/json',
@@ -51,7 +52,21 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
 
       if (response.ok) {
         const data = await response.json();
-        setFila(data);
+        // Converter para o formato esperado pela interface
+        const filaFormatada = data.map((p: any) => ({
+          protocolo: p.protocolo,
+          data_solicitacao: p.data_solicitacao,
+          especialidade: p.especialidade,
+          cidade_origem: p.cidade_origem || 'N/A',
+          unidade_solicitante: p.unidade_solicitante || 'Hospital Solicitante',
+          score_prioridade: p.score_prioridade,
+          classificacao_risco: p.classificacao_risco,
+          justificativa_tecnica: p.justificativa_tecnica,
+          cid: p.cid,
+          cid_desc: p.cid_desc,
+          unidade_destino_sugerida: p.unidade_destino
+        }));
+        setFila(filaFormatada);
       } else {
         throw new Error('Erro ao buscar fila');
       }
@@ -73,33 +88,51 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
     try {
       setSelectedPaciente(paciente.protocolo);
       
-      const dadosParaIA = {
+      console.log('Processando paciente com IA:', paciente.protocolo);
+      
+      // Preparar dados do paciente para a IA
+      const dadosPaciente = {
         protocolo: paciente.protocolo,
         especialidade: paciente.especialidade,
-        cid: "I21.9", // Exemplo - em produção viria do banco
-        cid_desc: "Condição médica",
-        prontuario_texto: `Paciente de ${paciente.cidade_origem} necessita ${paciente.especialidade}. ${paciente.justificativa_tecnica || 'Análise pendente.'}`,
-        historico_paciente: "Histórico não disponível",
-        prioridade_descricao: paciente.classificacao_risco || "Normal"
+        cid: (paciente as any).cid || 'M79.9', // CID padrão se não tiver
+        cid_desc: (paciente as any).cid_desc || 'Condição médica',
+        prontuario_texto: (paciente as any).prontuario_texto || `Paciente com ${paciente.especialidade.toLowerCase()}, aguardando regulação`,
+        historico_paciente: (paciente as any).historico_paciente || 'Histórico não informado',
+        prioridade_descricao: paciente.classificacao_risco === 'VERMELHO' ? 'Urgente' : 'Normal',
+        cidade_origem: paciente.cidade_origem || 'GOIANIA'
       };
 
+      console.log('📤 Enviando dados para IA:', dadosPaciente);
+
+      // Chamar a IA real do MS-Regulacao
       const response = await fetch(`${API_BASE_URL}/processar-regulacao`, {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${userToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(dadosParaIA),
+        body: JSON.stringify(dadosPaciente)
       });
 
-      if (response.ok) {
-        const resultado = await response.json();
-        setDecisaoIA(resultado);
-      } else {
-        throw new Error('Erro no processamento IA');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP ${response.status}`);
       }
+
+      const decisaoIA = await response.json();
+      console.log('Resposta da IA recebida:', decisaoIA);
+
+      // Adicionar protocolo à decisão para o CardDecisaoIA
+      decisaoIA.protocolo = paciente.protocolo;
+      
+      setDecisaoIA(decisaoIA);
+      
     } catch (error) {
-      console.error('Erro no processamento IA:', error);
-      Alert.alert('Erro', 'Falha no processamento com IA');
+      console.error('❌ Erro no processamento IA:', error);
+      Alert.alert(
+        'Erro na IA', 
+        `Falha no processamento: ${error instanceof Error ? error.message : 'Erro desconhecido'}\n\nVerifique se o MS-Regulacao está rodando.`
+      );
     } finally {
       setSelectedPaciente(null);
     }
@@ -120,10 +153,10 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
 
   const getRiskIcon = (risco: string) => {
     switch (risco) {
-      case 'VERMELHO': return '🚨';
-      case 'AMARELO': return '⚠️';
-      case 'VERDE': return '✅';
-      default: return '❓';
+      case 'VERMELHO': return 'CRÍTICO';
+      case 'AMARELO': return 'MODERADO';
+      case 'VERDE': return 'BAIXO';
+      default: return 'N/A';
     }
   };
 
@@ -140,7 +173,7 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
     <View style={styles.pacienteCard}>
       {/* Header com protocolo e risco */}
       <View style={styles.pacienteHeader}>
-        <Text style={styles.protocolo}>📋 {item.protocolo}</Text>
+        <Text style={styles.protocolo}>{item.protocolo}</Text>
         <View style={[
           styles.riskBadge, 
           { backgroundColor: getRiskColor(item.classificacao_risco) }
@@ -153,23 +186,23 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
 
       {/* Informações do paciente */}
       <View style={styles.pacienteInfo}>
-        <Text style={styles.infoLabel}>🏥 Especialidade:</Text>
+        <Text style={styles.infoLabel}>Especialidade:</Text>
         <Text style={styles.infoValue}>{item.especialidade}</Text>
         
-        <Text style={styles.infoLabel}>📍 Origem:</Text>
+        <Text style={styles.infoLabel}>Origem:</Text>
         <Text style={styles.infoValue}>{item.cidade_origem}</Text>
         
-        <Text style={styles.infoLabel}>🏢 Unidade Solicitante:</Text>
+        <Text style={styles.infoLabel}>Unidade Solicitante:</Text>
         <Text style={styles.infoValue} numberOfLines={2}>
           {item.unidade_solicitante}
         </Text>
         
-        <Text style={styles.infoLabel}>⏰ Solicitação:</Text>
+        <Text style={styles.infoLabel}>Solicitação:</Text>
         <Text style={styles.infoValue}>{formatDate(item.data_solicitacao)}</Text>
         
         {item.score_prioridade && (
           <>
-            <Text style={styles.infoLabel}>📊 Score de Prioridade:</Text>
+            <Text style={styles.infoLabel}>Score de Prioridade:</Text>
             <Text style={[styles.infoValue, { fontWeight: 'bold' }]}>
               {item.score_prioridade}/10
             </Text>
@@ -178,7 +211,7 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
         
         {item.justificativa_tecnica && (
           <>
-            <Text style={styles.infoLabel}>📝 Justificativa:</Text>
+            <Text style={styles.infoLabel}>Justificativa:</Text>
             <Text style={styles.justificativa}>{item.justificativa_tecnica}</Text>
           </>
         )}
@@ -194,7 +227,7 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
           <ActivityIndicator color="#FFF" />
         ) : (
           <Text style={styles.actionButtonText}>
-            🤖 Processar com IA
+            Processar com IA
           </Text>
         )}
       </TouchableOpacity>
@@ -230,7 +263,7 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>✅ Nenhum paciente na fila</Text>
+            <Text style={styles.emptyText}>Nenhum paciente na fila</Text>
             <Text style={styles.emptySubtext}>
               Todos os pacientes foram regulados com sucesso!
             </Text>

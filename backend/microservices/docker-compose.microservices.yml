@@ -1,0 +1,173 @@
+version: '3.8'
+
+services:
+  # === MICROSERVIÇOS ===
+  
+  # MS-Hospital (Porta 8001)
+  ms-hospital:
+    build:
+      context: ../
+      dockerfile: microservices/Dockerfile.microservice
+      args:
+        SERVICE_NAME: ms-hospital
+    container_name: ms-hospital
+    environment:
+      - DATABASE_URL=postgresql://regulacao_user:regulacao_pass@db:5432/regulacao_db
+      - JWT_SECRET_KEY=regulacao_jwt_secret_key_production
+      - MS_REGULACAO_URL=http://ms-regulacao:8002
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./ms-hospital:/app/ms-hospital
+      - ./shared:/app/shared
+      - ../pipeline_hospitais_goias.py:/app/pipeline_hospitais_goias.py
+      - ../pipeline_hospitais_goias_rag.py:/app/pipeline_hospitais_goias_rag.py
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MS-Regulacao (Porta 8002) - COM BIOBERT
+  ms-regulacao:
+    build:
+      context: ../
+      dockerfile: microservices/Dockerfile.microservice
+      args:
+        SERVICE_NAME: ms-regulacao
+    container_name: ms-regulacao
+    environment:
+      - DATABASE_URL=postgresql://regulacao_user:regulacao_pass@db:5432/regulacao_db
+      - JWT_SECRET_KEY=regulacao_jwt_secret_key_production
+      - MS_TRANSFERENCIA_URL=http://ms-transferencia:8003
+      - OLLAMA_URL=http://ollama:11434
+    depends_on:
+      - db
+      - redis
+      - ollama
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./ms-regulacao:/app/ms-regulacao
+      - ./shared:/app/shared
+      - ../pipeline_hospitais_goias.py:/app/pipeline_hospitais_goias.py
+      - ../pipeline_hospitais_goias_rag.py:/app/pipeline_hospitais_goias_rag.py
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MS-Transferencia (Porta 8003)
+  ms-transferencia:
+    build:
+      context: ../
+      dockerfile: microservices/Dockerfile.microservice
+      args:
+        SERVICE_NAME: ms-transferencia
+    container_name: ms-transferencia
+    environment:
+      - DATABASE_URL=postgresql://regulacao_user:regulacao_pass@db:5432/regulacao_db
+      - JWT_SECRET_KEY=regulacao_jwt_secret_key_production
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./ms-transferencia:/app/ms-transferencia
+      - ./shared:/app/shared
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # === INFRAESTRUTURA COMPARTILHADA ===
+
+  # Ollama (Llama 3) - OPEN SOURCE LLM
+  ollama:
+    image: ollama/ollama:latest
+    container_name: regulacao_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_storage:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Banco de Dados PostgreSQL (compartilhado)
+  db:
+    image: postgres:15-alpine
+    container_name: regulacao_database_microservices
+    environment:
+      POSTGRES_USER: regulacao_user
+      POSTGRES_PASSWORD: regulacao_pass
+      POSTGRES_DB: regulacao_db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - pgdata_microservices:/var/lib/postgresql/data
+      - ../init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5433:5432"  # Porta diferente para não conflitar
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U regulacao_user -d regulacao_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis para Cache (compartilhado)
+  redis:
+    image: redis:7-alpine
+    container_name: regulacao_redis_microservices
+    ports:
+      - "6380:6379"  # Porta diferente para não conflitar
+    volumes:
+      - redis_data_microservices:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway (Nginx)
+  api-gateway:
+    image: nginx:alpine
+    container_name: regulacao_api_gateway
+    ports:
+      - "8080:80"  # Porta do gateway
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - ms-hospital
+      - ms-regulacao
+      - ms-transferencia
+    restart: unless-stopped
+
+volumes:
+  ollama_storage:
+    driver: local
+  pgdata_microservices:
+    driver: local
+  redis_data_microservices:
+    driver: local
+
+networks:
+  default:
+    name: regulacao_microservices_network
+    driver: bridge

@@ -1,0 +1,36 @@
+FROM python:3.11-slim
+
+# Argumentos de build
+ARG SERVICE_NAME
+ENV SERVICE_NAME=${SERVICE_NAME}
+
+# Instalar dependências do sistema
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Definir diretório de trabalho
+WORKDIR /app
+
+# Copiar requirements
+COPY requirements.txt .
+
+# Instalar dependências Python
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar código compartilhado
+COPY microservices/shared ./shared
+
+# Copiar pipeline de hospitais
+COPY pipeline_hospitais_goias.py .
+
+# Copiar código do microserviço específico
+COPY microservices/${SERVICE_NAME} ./${SERVICE_NAME}
+
+# Expor porta (será definida por variável de ambiente)
+EXPOSE 8001
+EXPOSE 8002
+EXPOSE 8003
+
+# Comando para executar o microserviço
+CMD python ${SERVICE_NAME}/main.py

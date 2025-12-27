@@ -1,3 +1,8 @@
+"""
+Modelos de dados compartilhados entre microserviços
+Mantém compatibilidade com o sistema atual
+"""
+
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, Boolean, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -10,7 +15,7 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Modelos de Dados Compartilhados
+# Modelos de Dados Compartilhados (mantidos do sistema atual)
 class PacienteRegulacao(Base):
     __tablename__ = "pacientes_regulacao"
     
@@ -52,6 +57,7 @@ class HistoricoDecisoes(Base):
     usuario_validador = Column(String, nullable=True)
     decisao_final = Column(Text, nullable=True)
     tempo_processamento = Column(Float)
+    microservico_origem = Column(String, nullable=True)  # Novo campo para rastreabilidade
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Usuario(Base):
@@ -65,6 +71,38 @@ class Usuario(Base):
     unidade_vinculada = Column(String, nullable=True)
     ativo = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+# Novos modelos para microserviços futuros
+class TransferenciaAmbulancia(Base):
+    __tablename__ = "transferencias_ambulancia"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    protocolo = Column(String, index=True)
+    tipo_transporte = Column(String)  # USA, USB, PROPRIO
+    status_transferencia = Column(String)  # SOLICITADA, EM_TRANSITO, CONCLUIDA, CANCELADA
+    unidade_origem = Column(String)
+    unidade_destino = Column(String)
+    data_solicitacao = Column(DateTime, default=datetime.utcnow)
+    data_inicio_transporte = Column(DateTime, nullable=True)
+    data_chegada = Column(DateTime, nullable=True)
+    observacoes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class MedicacaoAltaComplexidade(Base):
+    __tablename__ = "medicacao_alta_complexidade"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    protocolo = Column(String, index=True)
+    medicamento = Column(String)
+    dosagem = Column(String)
+    frequencia = Column(String)
+    duracao_tratamento = Column(String)
+    status_dispensacao = Column(String)  # SOLICITADA, APROVADA, DISPENSADA, NEGADA
+    justificativa_medica = Column(Text)
+    unidade_solicitante = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # Dependency para obter sessão do banco
 def get_db():

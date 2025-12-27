@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { Platform } from 'react-native';
+import TransparenciaWidget from './TransparenciaWidget';
+import OcupacaoHospitais from './OcupacaoHospitais';
 
 const { width } = Dimensions.get('window');
 
@@ -14,6 +16,8 @@ const DashboardPublico = ({ dadosLeitos: initialData }) => {
   const [dadosLeitos, setDadosLeitos] = useState(initialData || []);
   const [refreshing, setRefreshing] = useState(false);
   const [statusSummary, setStatusSummary] = useState([]);
+  const [ocupacaoHospitais, setOcupacaoHospitais] = useState([]);
+  const [resumoOcupacao, setResumoOcupacao] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
 
   const fetchDashboardData = async () => {
@@ -23,6 +27,8 @@ const DashboardPublico = ({ dadosLeitos: initialData }) => {
       
       setDadosLeitos(data.unidades_pressao || []);
       setStatusSummary(data.status_summary || []);
+      setOcupacaoHospitais(data.ocupacao_hospitais || []);
+      setResumoOcupacao(data.resumo_ocupacao || null);
       setLastUpdate(data.ultima_atualizacao);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
@@ -105,7 +111,7 @@ const DashboardPublico = ({ dadosLeitos: initialData }) => {
           
           {item.cidade && (
             <View style={styles.locationContainer}>
-              <Text style={styles.locationText}>📍 {item.cidade}</Text>
+              <Text style={styles.locationText}>{item.cidade}</Text>
             </View>
           )}
         </View>
@@ -133,7 +139,27 @@ const DashboardPublico = ({ dadosLeitos: initialData }) => {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        ListHeaderComponent={statusSummary.length > 0 ? renderStatusSummary : null}
+        ListHeaderComponent={() => (
+          <>
+            {statusSummary.length > 0 && renderStatusSummary()}
+            
+            {/* NOVA SEÇÃO: Ocupação de Hospitais */}
+            {ocupacaoHospitais.length > 0 && resumoOcupacao && (
+              <OcupacaoHospitais 
+                ocupacao_hospitais={ocupacaoHospitais}
+                resumo_ocupacao={resumoOcupacao}
+              />
+            )}
+            
+            <TransparenciaWidget />
+            
+            {dadosLeitos.length > 0 && (
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Unidades com Pressão na Regulação</Text>
+              </View>
+            )}
+          </>
+        )}
         showsVerticalScrollIndicator={false}
       />
     </View>
@@ -275,6 +301,15 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 12,
     color: '#666'
+  },
+  sectionHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#004A8D',
   }
 });
 
