@@ -426,6 +426,68 @@ Telefone: "(62) 98765-4321" → "(62) *****-**21"
 
 ## 🚀 **Como Executar a Aplicação**
 
+### **🐳 Opção 1: Docker (Recomendado para Produção)**
+
+A forma mais fácil de rodar o sistema completo é usando Docker. Todos os serviços (PostgreSQL, Redis, Ollama/Llama 3, Backend, MS-Ingestao, Frontend) são iniciados automaticamente.
+
+#### Pré-requisitos Docker
+- **Docker Desktop** - [Download](https://www.docker.com/products/docker-desktop/)
+- **8GB+ RAM** (recomendado 16GB para Llama 3)
+- **20GB+ espaço em disco** (para imagens e modelos)
+
+#### Iniciar com Docker (Windows)
+```powershell
+# Clone o repositório
+git clone https://github.com/LiviaMor/regulacao-ms.git
+cd regulacao-ms
+
+# Iniciar todos os serviços
+.\start-docker.ps1 up
+
+# Aguarde ~10 minutos na primeira execução (download de imagens e modelos)
+```
+
+#### Iniciar com Docker (Linux/Mac)
+```bash
+# Clone o repositório
+git clone https://github.com/LiviaMor/regulacao-ms.git
+cd regulacao-ms
+
+# Dar permissão ao script
+chmod +x start-docker.sh
+
+# Iniciar todos os serviços
+./start-docker.sh up
+```
+
+#### Acessar o Sistema
+Após iniciar, acesse:
+- **Frontend**: http://localhost:8082
+- **API Docs**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+
+#### Comandos Docker Úteis
+```bash
+# Ver status dos containers
+.\start-docker.ps1 status
+
+# Ver logs em tempo real
+.\start-docker.ps1 logs
+
+# Parar todos os serviços
+.\start-docker.ps1 down
+
+# Reconstruir imagens (após alterações)
+.\start-docker.ps1 rebuild
+
+# Limpar tudo (volumes inclusos)
+.\start-docker.ps1 clean
+```
+
+---
+
+### **💻 Opção 2: Execução Local (Desenvolvimento)**
+
 ### **Pré-requisitos**
 
 #### Software Necessário

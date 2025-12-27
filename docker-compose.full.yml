@@ -1,0 +1,245 @@
+# =============================================================================
+# DOCKER COMPOSE - SISTEMA COMPLETO DE REGULAÇÃO SES-GO
+# =============================================================================
+# Este arquivo inicia TODOS os serviços necessários para o sistema funcionar:
+# - PostgreSQL (banco de dados)
+# - Redis (cache)
+# - Ollama/Llama 3 (IA generativa)
+# - Backend Principal (FastAPI + BioBERT)
+# - MS-Ingestao (memória de curto prazo)
+# - Frontend (React/Expo Web)
+# =============================================================================
+# 
+# COMO USAR:
+#   docker-compose -f docker-compose.full.yml up -d
+#
+# VERIFICAR STATUS:
+#   docker-compose -f docker-compose.full.yml ps
+#
+# VER LOGS:
+#   docker-compose -f docker-compose.full.yml logs -f
+#
+# PARAR TUDO:
+#   docker-compose -f docker-compose.full.yml down
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # BANCO DE DADOS - PostgreSQL
+  # ===========================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: regulacao_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1904
+      POSTGRES_DB: regulacao_db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - regulacao_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d regulacao_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================================================
+  # CACHE - Redis
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: regulacao_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - regulacao_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================================================
+  # IA GENERATIVA - Ollama (Llama 3)
+  # ===========================================================================
+  # NOTA: Requer GPU NVIDIA para melhor performance
+  # Sem GPU, use a versão CPU (mais lenta)
+  # ===========================================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: regulacao_ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - regulacao_network
+    restart: unless-stopped
+    # Descomente as linhas abaixo se tiver GPU NVIDIA:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ===========================================================================
+  # BACKEND PRINCIPAL - FastAPI + BioBERT + Matchmaker
+  # ===========================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.unified
+    container_name: regulacao_backend
+    environment:
+      - DATABASE_URL=postgresql://postgres:1904@postgres:5432/regulacao_db
+      - OLLAMA_URL=http://ollama:11434
+      - MS_INGESTAO_URL=http://ms-ingestao:8004
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET_KEY=regulacao_jwt_secret_key_production_change_me
+      - ALLOWED_ORIGINS=http://localhost:8082,http://localhost:3000,http://frontend:8082
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - biobert_cache:/root/.cache/huggingface
+    networks:
+      - regulacao_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s  # BioBERT demora para carregar
+
+  # ===========================================================================
+  # MS-INGESTAO - Memória de Curto Prazo (Tendências)
+  # ===========================================================================
+  ms-ingestao:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.ms-ingestao
+    container_name: regulacao_ms_ingestao
+    environment:
+      - DATABASE_URL=postgresql://postgres:1904@postgres:5432/regulacao_db
+      - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8004:8004"
+    volumes:
+      - ./backend/microservices:/app/microservices
+    networks:
+      - regulacao_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8004/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===========================================================================
+  # FRONTEND - React/Expo Web
+  # ===========================================================================
+  frontend:
+    build:
+      context: ./regulacao-app
+      dockerfile: Dockerfile
+    container_name: regulacao_frontend
+    environment:
+      - EXPO_PUBLIC_API_URL=http://backend:8000
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    ports:
+      - "8082:8082"
+    networks:
+      - regulacao_network
+    restart: unless-stopped
+
+  # ===========================================================================
+  # INICIALIZADOR - Carrega modelo Llama e sincroniza dados
+  # ===========================================================================
+  init-services:
+    image: curlimages/curl:latest
+    container_name: regulacao_init
+    depends_on:
+      backend:
+        condition: service_healthy
+      ms-ingestao:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    networks:
+      - regulacao_network
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "=== Inicializando serviços ==="
+        
+        # Baixar modelo Llama 3 no Ollama (se não existir)
+        echo "Verificando modelo Llama 3..."
+        curl -X POST http://ollama:11434/api/pull -d '{"name": "llama3"}' || true
+        
+        # Aguardar backend estar pronto
+        sleep 10
+        
+        # Sincronizar dados de ocupação
+        echo "Sincronizando dados de ocupação..."
+        curl -X POST http://backend:8000/sincronizar-ocupacao || true
+        
+        echo "=== Inicialização concluída ==="
+
+# =============================================================================
+# VOLUMES PERSISTENTES
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  ollama_data:
+    driver: local
+  biobert_cache:
+    driver: local
+
+# =============================================================================
+# REDE
+# =============================================================================
+networks:
+  regulacao_network:
+    driver: bridge
+    name: regulacao_network

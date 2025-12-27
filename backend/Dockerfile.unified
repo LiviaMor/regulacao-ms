@@ -1,6 +1,9 @@
+# =============================================================================
+# DOCKERFILE - Backend Principal (FastAPI + BioBERT + Matchmaker)
+# =============================================================================
+
 FROM python:3.11-slim
 
-# Definir diretório de trabalho
 WORKDIR /app
 
 # Instalar dependências do sistema
@@ -9,11 +12,18 @@ RUN apt-get update && apt-get install -y \
     g++ \
     curl \
     postgresql-client \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar requirements e instalar dependências Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Pré-baixar modelo BioBERT (evita download no primeiro request)
+RUN python -c "from transformers import AutoTokenizer, AutoModel; \
+    AutoTokenizer.from_pretrained('dmis-lab/biobert-base-cased-v1.1'); \
+    AutoModel.from_pretrained('dmis-lab/biobert-base-cased-v1.1'); \
+    print('BioBERT baixado com sucesso!')"
 
 # Copiar código da aplicação
 COPY . .
@@ -24,9 +34,13 @@ RUN mkdir -p /app/models /app/logs
 # Expor porta
 EXPOSE 8000
 
-# Script de inicialização
-COPY start_unified.sh /start_unified.sh
-RUN chmod +x /start_unified.sh
+# Variáveis de ambiente padrão
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
-# Comando padrão
-CMD ["/start_unified.sh"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Comando de inicialização
+CMD ["python", "-m", "uvicorn", "main_unified:app", "--host", "0.0.0.0", "--port", "8000"]
