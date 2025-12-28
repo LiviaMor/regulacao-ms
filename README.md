@@ -21,6 +21,8 @@
 ![Open Source](https://img.shields.io/badge/IA-100%25_Aberta-brightgreen?style=for-the-badge)
 ![LGPD](https://img.shields.io/badge/LGPD-Compliant-blue?style=for-the-badge)
 
+[![FAPEG](https://img.shields.io/badge/FAPEG-Goiás%20Aberto%20IA-orange.svg)](https://fapeg.go.gov.br)
+
 
 Sistema de Regulação Hospitalar Inteligente Desenvolvido para o Prêmio Goiás Aberto para IA – GO.IA - Chamada Pública FAPEG nº 34/2025 
 
