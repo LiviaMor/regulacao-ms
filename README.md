@@ -130,56 +130,59 @@ Sistema pioneiro que combina **processamento de linguagem natural médica** com 
 regulacao-ms/
 ├── backend/                          # Backend Python/FastAPI
 │   ├── main_unified.py              # ✅ Servidor principal unificado (porta 8000)
-│   ├── requirements.txt             # ✅ Dependências Python
-│   ├── .env                         # Configuração (DATABASE_URL, etc.)
-│   ├── .env.example                 # Exemplo de configuração
-│   ├── docker-compose.yml           # Docker Compose
-│   ├── Dockerfile.unified           # Dockerfile para build
+│   ├── requirements.txt             # ✅ Dependencias Python
+│   ├── .env                         # Configuracao (DATABASE_URL, etc.)
+│   ├── .env.example                 # Exemplo de configuracao
+│   ├── docker-compose.yml           # Docker Compose (backend apenas)
+│   ├── Dockerfile.unified           # ✅ Dockerfile backend principal
+│   ├── Dockerfile.ms-ingestao       # ✅ Dockerfile MS-Ingestao
+│   ├── start_all_services.py        # ✅ Script iniciar servicos (local)
 │   │
-│   ├── shared/                      # Módulos compartilhados
-│   │   └── database.py              # ✅ Modelos e anonimização LGPD
+│   ├── shared/                      # Modulos compartilhados
+│   │   └── database.py              # ✅ Modelos e anonimizacao LGPD
 │   │
-│   ├── microservices/               # Microserviços
-│   │   ├── shared/                  # Código compartilhado entre microserviços
+│   ├── microservices/               # Microservicos
+│   │   ├── shared/                  # Codigo compartilhado entre microservicos
 │   │   │   ├── database.py          # ✅ Modelos compartilhados
-│   │   │   ├── biobert_service.py   # ✅ Serviço BioBERT
+│   │   │   ├── biobert_service.py   # ✅ Servico BioBERT
 │   │   │   ├── matchmaker_logistico.py  # ✅ Matchmaker
 │   │   │   ├── xai_explicabilidade.py   # ✅ XAI
-│   │   │   ├── auth.py              # Autenticação JWT
-│   │   │   └── utils.py             # Utilitários
+│   │   │   ├── auth.py              # Autenticacao JWT
+│   │   │   └── utils.py             # Utilitarios
 │   │   │
 │   │   ├── ms-ingestao/             # ✅ MS-Ingestao (porta 8004)
-│   │   │   ├── main.py              # ✅ Memória de curto prazo, tendências
-│   │   │   └── README.md            # Documentação do microserviço
+│   │   │   ├── main.py              # ✅ Memoria de curto prazo, tendencias
+│   │   │   └── README.md            # Documentacao do microservico
 │   │   │
 │   │   ├── ms-hospital/             # MS Hospital (futuro)
-│   │   ├── ms-regulacao/            # MS Regulação (futuro)
-│   │   └── ms-transferencia/        # MS Transferência (futuro)
+│   │   ├── ms-regulacao/            # MS Regulacao (futuro)
+│   │   └── ms-transferencia/        # MS Transferencia (futuro)
 │   │
-│   ├── pipeline_hospitais_goias.py  # ✅ Pipeline de seleção de hospitais
-│   ├── migrar_banco_completo.py     # ✅ Script migração completa
+│   ├── pipeline_hospitais_goias.py  # ✅ Pipeline de selecao de hospitais
+│   ├── migrar_banco_completo.py     # ✅ Script migracao completa
 │   ├── verificar_colunas.py         # ✅ Verificar banco de dados
 │   └── criar_paciente_teste.py      # ✅ Criar dados de teste
 │
 ├── regulacao-app/                    # Frontend React Native/Expo (porta 8082)
+│   ├── Dockerfile                   # ✅ Dockerfile frontend
 │   ├── app/                         # Rotas e telas
-│   │   └── (tabs)/                  # Navegação por abas
-│   │       ├── index.tsx            # Dashboard público
-│   │       ├── hospital.tsx         # ✅ Área hospitalar
-│   │       ├── regulacao.tsx        # ✅ Área de regulação
-│   │       ├── transferencia.tsx    # ✅ Área de transferência
-│   │       ├── consulta.tsx         # ✅ Consulta pública
+│   │   └── (tabs)/                  # Navegacao por abas
+│   │       ├── index.tsx            # Dashboard publico
+│   │       ├── hospital.tsx         # ✅ Area hospitalar
+│   │       ├── regulacao.tsx        # ✅ Area de regulacao
+│   │       ├── transferencia.tsx    # ✅ Area de transferencia
+│   │       ├── consulta.tsx         # ✅ Consulta publica
 │   │       └── auditoria.tsx        # ✅ Dashboard auditoria
 │   │
 │   ├── components/                  # Componentes React
-│   │   ├── AreaHospital.tsx         # ✅ Formulário inserção paciente
-│   │   ├── FilaRegulacao.tsx        # ✅ Fila de regulação
-│   │   ├── CardDecisaoIA.tsx        # ✅ Card de decisão IA
-│   │   ├── AreaTransferencia.tsx    # ✅ Gestão de transferências
-│   │   ├── ConsultaPaciente.tsx     # ✅ Consulta pública
-│   │   ├── DashboardPublico.tsx     # ✅ Dashboard público
+│   │   ├── AreaHospital.tsx         # ✅ Formulario insercao paciente
+│   │   ├── FilaRegulacao.tsx        # ✅ Fila de regulacao
+│   │   ├── CardDecisaoIA.tsx        # ✅ Card de decisao IA
+│   │   ├── AreaTransferencia.tsx    # ✅ Gestao de transferencias
+│   │   ├── ConsultaPaciente.tsx     # ✅ Consulta publica
+│   │   ├── DashboardPublico.tsx     # ✅ Dashboard publico
 │   │   ├── DashboardAuditoria.tsx   # ✅ Dashboard auditoria
-│   │   ├── OcupacaoHospitais.tsx    # ✅ Ocupação hospitalar
+│   │   ├── OcupacaoHospitais.tsx    # ✅ Ocupacao hospitalar
 │   │   └── ui/                      # Componentes UI
 │   │       ├── Header.tsx
 │   │       ├── HospitalCard.tsx
@@ -189,8 +192,8 @@ regulacao-ms/
 │   ├── constants/                   # Constantes e temas
 │   │   └── theme.ts
 │   │
-│   ├── package.json                 # ✅ Dependências Node.js
-│   └── tsconfig.json                # Configuração TypeScript
+│   ├── package.json                 # ✅ Dependencias Node.js
+│   └── tsconfig.json                # Configuracao TypeScript
 │
 ├── dados_*.json                     # Dados reais SES-GO
 │   ├── dados_admitidos.json
@@ -204,26 +207,30 @@ regulacao-ms/
 │   ├── teste_ia_completa.py
 │   └── benchmark_performance.py
 │
-├── ANALISE_COMPLETA_SISTEMA.md      # ✅ Análise técnica completa
+├── docker-compose.full.yml          # ✅ Docker Compose completo (todos os servicos)
+├── start-docker.ps1                 # ✅ Script inicializacao Docker (Windows/PowerShell)
+├── start-docker.sh                  # Script inicializacao Docker (Linux/Mac)
+│
+├── ANALISE_COMPLETA_SISTEMA.md      # ✅ Analise tecnica completa
 ├── DIAGRAMA_FLUXO_COMPLETO.md       # ✅ Diagrama de fluxo
-├── CHECKLIST_VALIDACAO_FINAL.md     # ✅ Checklist de validação
+├── CHECKLIST_VALIDACAO_FINAL.md     # ✅ Checklist de validacao
 ├── COMO_TESTAR_SISTEMA_COMPLETO.md  # ✅ Guia de testes
-├── FLUXO_TRANSFERENCIA_CORRIGIDO.md # ✅ Fluxo de transferência
+├── FLUXO_TRANSFERENCIA_CORRIGIDO.md # ✅ Fluxo de transferencia
 └── README.md                        # ✅ Este arquivo
 ```
 
 ---
 
-## **🏗️ Arquitetura da Solução**
+## **🏗️ Arquitetura da Solucao**
 
-### **Visão Geral**
+### **Visao Geral**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         FRONTEND (React Native/Expo)                    │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐ │
-│  │Dashboard │  │ Hospital │  │Regulação │  │Transfer. │  │ Consulta │ │
-│  │ Público  │  │          │  │          │  │          │  │  Pública │ │
+│  │Dashboard │  │ Hospital │  │Regulacao │  │Transfer. │  │ Consulta │ │
+│  │ Publico  │  │          │  │          │  │          │  │  Publica │ │
 │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘ │
 └───────┼─────────────┼─────────────┼─────────────┼─────────────┼────────┘
         │             │             │             │             │
@@ -424,80 +431,125 @@ Telefone: "(62) 98765-4321" → "(62) *****-**21"
 
 ---
 
-## 🚀 **Como Executar a Aplicação**
+## 🚀 **Como Executar a Aplicacao**
 
-### **🐳 Opção 1: Docker (Recomendado para Produção)**
+### **🐳 Opcao 1: Docker (Recomendado)**
 
-A forma mais fácil de rodar o sistema completo é usando Docker. Todos os serviços (PostgreSQL, Redis, Ollama/Llama 3, Backend, MS-Ingestao, Frontend) são iniciados automaticamente.
+A forma mais facil de rodar o sistema completo e usando Docker. Todos os servicos (PostgreSQL, Redis, Ollama/Llama 3, Backend, MS-Ingestao, Frontend) sao iniciados automaticamente.
 
-#### Pré-requisitos Docker
-- **Docker Desktop** - [Download](https://www.docker.com/products/docker-desktop/)
-- **8GB+ RAM** (recomendado 16GB para Llama 3)
-- **20GB+ espaço em disco** (para imagens e modelos)
+#### **PASSO 1: Instalar Docker Desktop (Windows)**
 
-#### Iniciar com Docker (Windows)
+1. Baixe o Docker Desktop: https://www.docker.com/products/docker-desktop/
+2. Execute o instalador e siga as instrucoes
+3. Reinicie o computador se solicitado
+4. Abra o Docker Desktop e aguarde iniciar
+
+**Verificar instalacao (PowerShell):**
 ```powershell
-# Clone o repositório
+docker --version
+# Deve mostrar: Docker version 24.x.x ou superior
+
+docker compose version
+# Deve mostrar: Docker Compose version v2.x.x
+```
+
+#### **PASSO 2: Requisitos de Sistema**
+
+| Requisito | Minimo | Recomendado |
+|-----------|--------|-------------|
+| RAM | 8 GB | 16 GB |
+| Disco | 20 GB | 40 GB |
+| CPU | 4 cores | 8 cores |
+| GPU | - | NVIDIA (opcional, para Llama 3) |
+
+**Configurar recursos no Docker Desktop:**
+1. Abra Docker Desktop > Settings > Resources
+2. Aumente Memory para pelo menos 8 GB
+3. Clique em "Apply & Restart"
+
+#### **PASSO 3: Clonar e Iniciar (PowerShell)**
+
+```powershell
+# 1. Clonar o repositorio
 git clone https://github.com/LiviaMor/regulacao-ms.git
+
+# 2. Entrar na pasta
 cd regulacao-ms
 
-# Iniciar todos os serviços
+# 3. Iniciar todos os servicos
 .\start-docker.ps1 up
-
-# Aguarde ~10 minutos na primeira execução (download de imagens e modelos)
 ```
 
-#### Iniciar com Docker (Linux/Mac)
-```bash
-# Clone o repositório
-git clone https://github.com/LiviaMor/regulacao-ms.git
-cd regulacao-ms
+**Primeira execucao:** Aguarde ~10-15 minutos para download de imagens e modelos de IA.
 
-# Dar permissão ao script
-chmod +x start-docker.sh
+#### **PASSO 4: Acessar o Sistema**
 
-# Iniciar todos os serviços
-./start-docker.sh up
-```
+Apos iniciar, acesse no navegador:
 
-#### Acessar o Sistema
-Após iniciar, acesse:
-- **Frontend**: http://localhost:8082
-- **API Docs**: http://localhost:8000/docs
-- **Health Check**: http://localhost:8000/health
+| Servico | URL | Descricao |
+|---------|-----|-----------|
+| **Frontend** | http://localhost:8082 | Interface do usuario |
+| **API Docs** | http://localhost:8000/docs | Documentacao interativa da API |
+| **Health Check** | http://localhost:8000/health | Status dos servicos |
 
-#### Comandos Docker Úteis
-```bash
+**Credenciais de teste:**
+- Email: `admin@sesgo.gov.br`
+- Senha: `admin123`
+
+#### **Comandos Docker (PowerShell)**
+
+```powershell
 # Ver status dos containers
 .\start-docker.ps1 status
 
 # Ver logs em tempo real
 .\start-docker.ps1 logs
 
-# Parar todos os serviços
+# Parar todos os servicos
 .\start-docker.ps1 down
 
-# Reconstruir imagens (após alterações)
+# Reconstruir imagens (apos alteracoes no codigo)
 .\start-docker.ps1 rebuild
 
-# Limpar tudo (volumes inclusos)
+# Limpar tudo (containers + volumes + dados)
 .\start-docker.ps1 clean
+
+# Diagnostico completo (verifica todos os servicos)
+.\diagnostico-docker.ps1
 ```
+
+#### **Health Check E2E (Validacao Completa)**
+
+```powershell
+# Executar validacao completa do sistema
+python backend/microservices/e2e-health-check.py
+```
+
+#### **Solucao de Problemas Docker**
+
+| Problema | Solucao |
+|----------|---------|
+| "Docker daemon not running" | Abra o Docker Desktop e aguarde iniciar |
+| "Port already in use" | Pare outros servicos nas portas 8000, 8004, 8082, 5432 |
+| "Out of memory" | Aumente a memoria no Docker Desktop > Settings > Resources |
+| "Build failed" | Execute `.\start-docker.ps1 rebuild` |
 
 ---
 
-### **💻 Opção 2: Execução Local (Desenvolvimento)**
+### **💻 Opcao 2: Execucao Local (Desenvolvimento)**
 
-### **Pré-requisitos**
+Use esta opcao se preferir rodar sem Docker ou para desenvolvimento.
 
-#### Software Necessário
+### **Pre-requisitos**
+
+#### Software Necessario
 - **Python 3.8+** - [Download](https://www.python.org/downloads/)
 - **Node.js 16+** - [Download](https://nodejs.org/)
 - **PostgreSQL 12+** - [Download](https://www.postgresql.org/download/)
 - **Git** - [Download](https://git-scm.com/)
 
-#### Verificar Instalações
-```bash
+#### Verificar Instalacoes (PowerShell)
+```powershell
 python --version  # Deve ser >= 3.8
 node --version    # Deve ser >= 16
 npm --version     # Deve ser >= 8
@@ -682,82 +734,104 @@ python teste_fluxo_completo_validacao.py
 
 ---
 
-### **📊 Arquitetura de Serviços**
+### **📊 Arquitetura de Serviços (Docker)**
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         SISTEMA COMPLETO                                │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    │
-│  │   FRONTEND      │    │  BACKEND        │    │  MS-INGESTAO    │    │
-│  │   (Expo/React)  │───▶│  (FastAPI)      │───▶│  (FastAPI)      │    │
-│  │   porta 8082    │    │  porta 8000     │    │  porta 8004     │    │
-│  └─────────────────┘    └────────┬────────┘    └────────┬────────┘    │
-│                                  │                      │              │
-│                                  └──────────┬───────────┘              │
-│                                             │                          │
-│                                  ┌──────────▼──────────┐               │
-│                                  │    PostgreSQL       │               │
-│                                  │    porta 5432       │               │
-│                                  └─────────────────────┘               │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    docker-compose.full.yml                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐       │
+│  │  PostgreSQL  │    │    Redis     │    │   Ollama     │       │
+│  │   :5432      │    │    :6379     │    │  (Llama 3)   │       │
+│  │              │    │              │    │   :11434     │       │
+│  └──────┬───────┘    └──────┬───────┘    └──────┬───────┘       │
+│         │                   │                   │                │
+│         └───────────────────┼───────────────────┘                │
+│                             │                                    │
+│                    ┌────────┴────────┐                          │
+│                    │                 │                          │
+│              ┌─────┴─────┐    ┌──────┴──────┐                   │
+│              │  Backend  │    │ MS-Ingestao │                   │
+│              │  :8000    │◄───│   :8004     │                   │
+│              │ (BioBERT) │    │ (Tendencias)│                   │
+│              └─────┬─────┘    └─────────────┘                   │
+│                    │                                            │
+│              ┌─────┴─────┐                                      │
+│              │ Frontend  │                                      │
+│              │  :8082    │                                      │
+│              └───────────┘                                      │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### **Serviços e Portas**
+### **Servicos e Portas**
 
-| Serviço | Porta | Descrição |
+| Servico | Porta | Descricao |
 |---------|-------|-----------|
+| **PostgreSQL** | 5432 | Banco de dados relacional |
+| **Redis** | 6379 | Cache e filas |
+| **Ollama (Llama 3)** | 11434 | IA generativa para analises complexas |
 | **Backend Principal** | 8000 | API REST, BioBERT, Matchmaker, XAI |
-| **MS-Ingestao** | 8004 | Memória de curto prazo, tendências de ocupação |
+| **MS-Ingestao** | 8004 | Memoria de curto prazo, tendencias de ocupacao |
 | **Frontend** | 8082 | Interface React Native/Expo |
-| **PostgreSQL** | 5432 | Banco de dados |
+
+### **Fluxo da IA**
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  Prontuario │────▶│   BioBERT   │────▶│   Llama 3   │────▶│  Matchmaker │
+│  (Entrada)  │     │  (Entidades)│     │  (Analise)  │     │  (Hospital) │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+                           │                   │                   │
+                           ▼                   ▼                   ▼
+                    Extrai sintomas,    Gera analise       Seleciona hospital
+                    CIDs, condicoes     clinica detalhada  ideal com logistica
+```
 
 ### **Endpoints Principais**
 
-| Endpoint | Método | Descrição |
+| Endpoint | Metodo | Descricao |
 |----------|--------|-----------|
-| `/health` | GET | Status do sistema e serviços |
-| `/dashboard/leitos` | GET | Dashboard público com ocupação |
+| `/health` | GET | Status do sistema e servicos |
+| `/dashboard/leitos` | GET | Dashboard publico com ocupacao |
 | `/sincronizar-ocupacao` | POST | Sincroniza dados com MS-Ingestao |
-| `/login` | POST | Autenticação JWT |
-| `/processar-regulacao` | POST | Análise IA de paciente |
-| `/decisao-regulador` | POST | Registrar decisão do regulador |
-| `/solicitar-ambulancia` | POST | Solicitar ambulância |
-| `/consulta-paciente` | POST | Consulta pública de paciente |
+| `/ms-ingestao/reconectar` | POST | Forca reconexao com MS-Ingestao |
+| `/login` | POST | Autenticacao JWT |
+| `/processar-regulacao` | POST | Analise IA de paciente |
+| `/decisao-regulador` | POST | Registrar decisao do regulador |
+| `/solicitar-ambulancia` | POST | Solicitar ambulancia |
+| `/consulta-paciente` | POST | Consulta publica de paciente |
 
 ---
 
-### **🐳 Instalação com Docker (Produção)**
+### **🐳 Instalacao com Docker (Producao)**
 
-#### **Opção 1: Docker Compose (Recomendado)**
+> **NOTA:** As instrucoes detalhadas de instalacao Docker estao na secao "Como Executar a Aplicacao" acima.
 
-##### 1.1 Subir Todos os Serviços
-```bash
-cd backend
-docker-compose up -d
+#### **Comandos Rapidos (PowerShell)**
+
+```powershell
+# Subir todos os servicos
+.\start-docker.ps1 up
+
+# Verificar status
+.\start-docker.ps1 status
+
+# Ver logs
+.\start-docker.ps1 logs
+
+# Parar servicos
+.\start-docker.ps1 down
+
+# Limpar tudo (volumes inclusos)
+.\start-docker.ps1 clean
 ```
 
-##### 1.2 Verificar Status
-```bash
-docker-compose ps
-```
-
-##### 1.3 Ver Logs
-```bash
-docker-compose logs -f
-```
-
-##### 1.4 Parar Serviços
-```bash
-docker-compose down
-```
-
-#### **Opção 2: Build Manual**
+#### **Build Manual (Opcional)**
 
 ##### 2.1 Build da Imagem Backend
-```bash
+```powershell
 cd backend
 docker build -t regulacao-backend:latest -f Dockerfile.unified .
 ```
@@ -929,16 +1003,16 @@ GRANT ALL PRIVILEGES ON DATABASE regulacao_db TO regulacao;
 ```
 
 ##### 4. Iniciar com Docker Compose
-```bash
-cd backend
-sudo docker-compose up -d
+```powershell
+# Na raiz do projeto
+.\start-docker.ps1 up
 ```
 
-##### 5. Configurar Nginx
+##### 5. Configurar Nginx (Linux)
 ```bash
 sudo nano /etc/nginx/sites-available/regulacao
 
-# Adicionar configuração:
+# Adicionar configuracao:
 server {
     listen 80;
     server_name seu-dominio.com;
@@ -962,9 +1036,9 @@ sudo apt install certbot python3-certbot-nginx
 sudo certbot --nginx -d seu-dominio.com
 ```
 
-#### **Opção 2: AWS (EC2 + RDS)**
+#### **Opcao 2: AWS (EC2 + RDS)**
 
-##### 1. Criar Instância EC2
+##### 1. Criar Instancia EC2
 - AMI: Ubuntu 22.04 LTS
 - Tipo: t3.medium (2 vCPU, 4 GB RAM)
 - Storage: 30 GB SSD
@@ -985,8 +1059,8 @@ sudo sh get-docker.sh
 
 # Clonar e iniciar
 git clone https://github.com/LiviaMor/regulacao-ms.git
-cd regulacao-ms/backend
-sudo docker-compose up -d
+cd regulacao-ms
+./start-docker.sh up
 ```
 
 ##### 4. Deploy Frontend (S3 + CloudFront)

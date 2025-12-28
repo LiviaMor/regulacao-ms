@@ -7,9 +7,14 @@ import {
   Alert, 
   ActivityIndicator,
   Platform,
-  ScrollView
+  ScrollView,
+  Dimensions,
+  useWindowDimensions
 } from 'react-native';
 import StatusProcessamento from './StatusProcessamento';
+
+// Obter dimensões da tela
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Helper para alerts compatíveis com web
 const showAlert = (title: string, message: string, buttons?: any[]) => {
@@ -105,6 +110,12 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
   userToken 
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Hook para responsividade
+  const { width } = useWindowDimensions();
+  const isSmallScreen = width < 400;
+  const isMediumScreen = width >= 400 && width < 768;
+  const isLargeScreen = width >= 768;
 
   const getRiskColor = (risco: string) => {
     switch (risco) {
@@ -451,44 +462,65 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
           </View>
         )}
 
-        {/* Botão Chamar Ambulância */}
+        {/* Info: Ambulância será acionada ao AUTORIZAR ou ALTERAR */}
         {ambulancia && (
-          <TouchableOpacity 
-            style={styles.chamarAmbulanciaButton}
-            onPress={() => {
-              if (window.confirm(`Chamar Ambulância\n\nAcionar ${ambulancia.id} (${ambulancia.tipo})?\n\nTempo de chegada: ${ambulancia.tempo_chegada_min} min\nDestino: ${matchmaking.hospital_destino}`)) {
-                showAlert('Ambulância Acionada', `${ambulancia.id} foi acionada e está a caminho.`);
-              }
-            }}
-          >
-            <Text style={styles.chamarAmbulanciaText}>CHAMAR AMBULÂNCIA AGORA</Text>
-          </TouchableOpacity>
+          <View style={styles.infoAmbulancia}>
+            <Text style={styles.infoAmbulanciaText}>
+              🚑 Ambulância {ambulancia.tipo} será acionada automaticamente ao AUTORIZAR ou ALTERAR
+            </Text>
+          </View>
         )}
       </View>
     );
   };
 
+  // Estilos dinâmicos baseados no tamanho da tela
+  const dynamicStyles = {
+    card: {
+      margin: isSmallScreen ? 8 : 15,
+      maxWidth: isLargeScreen ? 600 : undefined,
+      alignSelf: isLargeScreen ? 'center' as const : undefined,
+      width: isLargeScreen ? 600 : undefined,
+    },
+    body: {
+      padding: isSmallScreen ? 12 : 20,
+    },
+    botoesDecisao: {
+      flexDirection: isSmallScreen ? 'column' as const : 'row' as const,
+      gap: isSmallScreen ? 10 : 8,
+    },
+    botaoDecisao: {
+      flex: isSmallScreen ? undefined : 1,
+      paddingVertical: isSmallScreen ? 14 : 12,
+    },
+  };
+
   return (
-    <View style={styles.card}>
-      {/* Header com classificação de risco */}
-      <View style={[
-        styles.header, 
-        { backgroundColor: getRiskColor(decisaoIA.analise_decisoria?.classificacao_risco || 'AMARELO') }
-      ]}>
-        <Text style={styles.whiteText}>
-          SUGESTÃO DA IA: {decisaoIA.analise_decisoria?.classificacao_risco || 'AMARELO'}
-        </Text>
-        <Text style={styles.scoreText}>
-          Score de Prioridade: {decisaoIA.analise_decisoria?.score_prioridade || decisaoIA.matchmaking_logistico?.score_final || 5}/10
-        </Text>
-      </View>
+    <ScrollView 
+      style={styles.scrollContainer}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={[styles.card, dynamicStyles.card]}>
+        {/* Header com classificação de risco */}
+        <View style={[
+          styles.header, 
+          { backgroundColor: getRiskColor(decisaoIA.analise_decisoria?.classificacao_risco || 'AMARELO') }
+        ]}>
+          <Text style={[styles.whiteText, isSmallScreen && { fontSize: 14 }]}>
+            SUGESTÃO DA IA: {decisaoIA.analise_decisoria?.classificacao_risco || 'AMARELO'}
+          </Text>
+          <Text style={styles.scoreText}>
+            Score: {decisaoIA.analise_decisoria?.score_prioridade || decisaoIA.matchmaking_logistico?.score_final || 5}/10
+          </Text>
+        </View>
 
       {/* Corpo do card */}
-      <View style={styles.body}>
+      <View style={[styles.body, dynamicStyles.body]}>
         {/* Destino sugerido */}
         <View style={styles.section}>
-          <Text style={styles.label}>Destino Sugerido:</Text>
-          <Text style={styles.value}>
+          <Text style={[styles.label, isSmallScreen && { fontSize: 11 }]}>Destino Sugerido:</Text>
+          <Text style={[styles.value, isSmallScreen && { fontSize: 14 }]}>
             {decisaoIA.analise_decisoria?.unidade_destino_sugerida || 
              decisaoIA.hospital_escolhido || 
              decisaoIA.matchmaking_logistico?.hospital_destino || 
@@ -498,8 +530,8 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
 
         {/* Justificativa */}
         <View style={styles.section}>
-          <Text style={styles.label}>Justificativa Clínica:</Text>
-          <Text style={styles.justificativa}>
+          <Text style={[styles.label, isSmallScreen && { fontSize: 11 }]}>Justificativa Clínica:</Text>
+          <Text style={[styles.justificativa, isSmallScreen && { fontSize: 12, padding: 8 }]}>
             {decisaoIA.analise_decisoria?.justificativa_clinica || 
              decisaoIA.justificativa_tecnica || 
              'Justificativa não disponível'}
@@ -556,48 +588,92 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
           />
         )}
 
-        {/* Botões de Decisão do Regulador */}
-        <View style={styles.botoesDecisao}>
+        {/* Botões de Decisão do Regulador - Conforme DIAGRAMA_FLUXO_COMPLETO.md */}
+        {/* AUTORIZAR = Aceita sugestão IA + Chama Ambulância → Transferência */}
+        {/* NEGAR = Discorda da IA → Volta para Hospital */}
+        {/* ALTERAR = Muda hospital + Chama Ambulância → Transferência */}
+        <View style={[styles.botoesDecisao, dynamicStyles.botoesDecisao]}>
           <TouchableOpacity 
-            style={[styles.botaoDecisao, styles.botaoAutorizar]} 
+            style={[styles.botaoDecisao, styles.botaoAutorizar, dynamicStyles.botaoDecisao]} 
             onPress={acionarTransferencia}
             disabled={isProcessing}
           >
             {isProcessing ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.botaoDecisaoText}>AUTORIZAR</Text>
+              <>
+                <Text style={styles.botaoDecisaoIcon}>✅</Text>
+                <Text style={[styles.botaoDecisaoText, isSmallScreen && { fontSize: 12 }]}>AUTORIZAR</Text>
+                <Text style={styles.botaoDecisaoSubtext}>Chama Ambulância</Text>
+              </>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.botaoDecisao, styles.botaoNegar]} 
+            style={[styles.botaoDecisao, styles.botaoNegar, dynamicStyles.botaoDecisao]} 
             onPress={negarTransferencia}
             disabled={isProcessing}
           >
-            <Text style={styles.botaoDecisaoText}>NEGAR</Text>
+            {isProcessing ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <Text style={styles.botaoDecisaoIcon}>❌</Text>
+                <Text style={[styles.botaoDecisaoText, isSmallScreen && { fontSize: 12 }]}>NEGAR</Text>
+                <Text style={styles.botaoDecisaoSubtext}>Volta p/ Hospital</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.botaoDecisao, styles.botaoAlterar]} 
+            style={[styles.botaoDecisao, styles.botaoAlterar, dynamicStyles.botaoDecisao]} 
             onPress={alterarDecisao}
             disabled={isProcessing}
           >
-            <Text style={styles.botaoDecisaoText}>ALTERAR</Text>
+            {isProcessing ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <Text style={styles.botaoDecisaoIcon}>✏️</Text>
+                <Text style={[styles.botaoDecisaoText, isSmallScreen && { fontSize: 12 }]}>ALTERAR</Text>
+                <Text style={styles.botaoDecisaoSubtext}>Muda Hospital</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
 
+        {/* Legenda do fluxo */}
+        <View style={styles.legendaFluxo}>
+          <Text style={styles.legendaText}>
+            ✅ Autorizar: Aceita sugestão e aciona ambulância
+          </Text>
+          <Text style={styles.legendaText}>
+            ❌ Negar: Paciente retorna ao hospital de origem
+          </Text>
+          <Text style={styles.legendaText}>
+            ✏️ Alterar: Muda hospital destino e aciona ambulância
+          </Text>
+        </View>
+
         {/* Disclaimer */}
-        <Text style={styles.disclaimer}>
+        <Text style={[styles.disclaimer, isSmallScreen && { fontSize: 10 }]}>
           Esta é uma sugestão baseada em IA. A decisão final é sempre do regulador médico.
         </Text>
       </View>
-    </View>
+      </View>
+    </ScrollView>
   );
 };
 
 // Estilos seguindo o padrão SES-GO (Azul Institucional, Branco e Cinza Claro)
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
   card: { 
     borderRadius: 12, 
     overflow: 'hidden', 
@@ -740,6 +816,35 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 11,
     textAlign: 'center',
+  },
+  botaoDecisaoSubtext: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 9,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  legendaFluxo: {
+    backgroundColor: '#F5F7FA',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  legendaText: {
+    fontSize: 10,
+    color: '#666',
+    marginBottom: 3,
+  },
+  infoAmbulancia: {
+    backgroundColor: '#E3F2FD',
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  infoAmbulanciaText: {
+    fontSize: 11,
+    color: '#1565C0',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   button: { 
     backgroundColor: '#004A8D', 

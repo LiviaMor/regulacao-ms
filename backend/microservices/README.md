@@ -53,11 +53,6 @@ Sistema distribuído em microserviços para escalabilidade e manutenibilidade, p
 - Contrarreferência
 - Relatórios de alta
 
-### 5. MS-Alta (Porta 8005)
-- Gestão de altas hospitalares
-- Contrarreferência
-- Relatórios de alta
-
 ### 6. MS-Obito (Porta 8006)
 - Fila de transplantes
 - Compatibilidade de órgãos

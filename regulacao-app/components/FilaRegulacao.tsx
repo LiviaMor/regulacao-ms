@@ -436,23 +436,25 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 10,
   },
   modalContent: {
     backgroundColor: '#FFF',
     borderRadius: 12,
-    margin: 20,
-    maxHeight: '80%',
+    width: '100%',
+    maxWidth: 600,
+    maxHeight: '90%',
+    overflow: 'hidden',
   },
   closeButton: {
     backgroundColor: '#FF5722',
-    padding: 12,
+    padding: 14,
     alignItems: 'center',
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
   },
   closeButtonText: {
     color: '#FFF',
     fontWeight: 'bold',
+    fontSize: 14,
   },
 });
 

@@ -392,8 +392,10 @@ def gerar_ocupacao_hospitais_estaduais():
 def processar_dados_json_dashboard():
     """Processa dados dos arquivos JSON para o dashboard"""
     try:
-        # Caminhos dos arquivos JSON (diretório raiz)
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # Caminhos dos arquivos JSON
+        # No Docker: /app/dados_*.json (montados via volume)
+        # Local: ../dados_*.json (relativo ao backend)
+        base_dir = '/app' if os.path.exists('/app/dados_admitidos.json') else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         
         arquivos_json = {
             'admitidos': os.path.join(base_dir, 'dados_admitidos.json'),
@@ -1034,7 +1036,9 @@ class DecisaoReguladorRequest(BaseModel):
     tipo_transporte: str
     observacoes: Optional[str] = None
     decisao_ia_original: dict
-    justificativa_negacao: Optional[str] = None  # Nova campo para justificativa de negação
+    justificativa_negacao: Optional[str] = None
+    decisao_alterada: Optional[bool] = False  # Indica se regulador alterou hospital sugerido
+    hospital_original: Optional[str] = None   # Hospital original sugerido pela IA
 
 @app.post("/decisao-regulador")
 async def registrar_decisao_regulador(
@@ -1042,7 +1046,15 @@ async def registrar_decisao_regulador(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["REGULADOR", "ADMIN"]))
 ):
-    """Registrar decisão do regulador (AUDITÁVEL)"""
+    """
+    Registrar decisão do regulador com 3 fluxos conforme DIAGRAMA_FLUXO_COMPLETO.md:
+    
+    1. APROVAR: Concorda com sugestão IA → Status: EM_TRANSFERENCIA → Vai para Transferência
+    2. NEGAR: Discorda da sugestão IA → Status: NEGADO_PENDENTE → Volta para Hospital Origem
+    3. ALTERAR: Muda hospital sugerido → Status: EM_TRANSFERENCIA → Vai para Transferência (hospital alterado)
+    
+    AUDITORIA COMPLETA: Todas as decisões são registradas no histórico para rastreabilidade.
+    """
     
     try:
         # Buscar paciente
@@ -1053,16 +1065,34 @@ async def registrar_decisao_regulador(
         if not paciente:
             raise HTTPException(status_code=404, detail="Paciente não encontrado")
         
-        # Registrar no histórico de decisões (AUDITORIA)
+        # Determinar tipo de decisão para auditoria
+        if decisao.decisao_alterada:
+            tipo_decisao = "ALTERADA_E_AUTORIZADA"
+            status_final = "EM_TRANSFERENCIA"
+            status_message = f"Decisão alterada e autorizada pelo regulador - Hospital alterado de '{decisao.hospital_original}' para '{decisao.unidade_destino}'"
+        elif decisao.decisao_regulador == 'AUTORIZADA':
+            tipo_decisao = "AUTORIZADA"
+            status_final = "EM_TRANSFERENCIA"
+            status_message = "Transferência autorizada pelo regulador - Ambulância acionada"
+        else:
+            tipo_decisao = "NEGADA"
+            status_final = "NEGADO_PENDENTE"
+            status_message = f"Transferência negada pelo regulador - Motivo: {decisao.justificativa_negacao or 'Não especificado'}"
+        
+        # Registrar no histórico de decisões (AUDITORIA COMPLETA)
         historico = HistoricoDecisoes(
             protocolo=decisao.protocolo,
             decisao_ia=json.dumps(decisao.decisao_ia_original),
             usuario_validador=current_user.email,
             decisao_final=json.dumps({
+                "tipo_decisao": tipo_decisao,
                 "decisao_regulador": decisao.decisao_regulador,
                 "unidade_destino": decisao.unidade_destino,
+                "unidade_destino_original": decisao.hospital_original,
                 "tipo_transporte": decisao.tipo_transporte,
                 "observacoes": decisao.observacoes,
+                "justificativa_negacao": decisao.justificativa_negacao,
+                "decisao_alterada": decisao.decisao_alterada,
                 "timestamp": datetime.utcnow().isoformat(),
                 "regulador": {
                     "nome": current_user.nome,
@@ -1074,29 +1104,31 @@ async def registrar_decisao_regulador(
         )
         db.add(historico)
         
-        # Atualizar status do paciente
-        if decisao.decisao_regulador == 'AUTORIZADA':
-            paciente.status = "INTERNACAO_AUTORIZADA"
+        # Atualizar status do paciente baseado na decisão
+        if status_final == "EM_TRANSFERENCIA":
+            # APROVAR ou ALTERAR: Paciente vai para Área de Transferência
+            paciente.status = status_final
             paciente.unidade_destino = decisao.unidade_destino
-            status_message = "Transferência autorizada pelo regulador"
+            paciente.tipo_transporte = decisao.tipo_transporte
+            paciente.data_solicitacao_ambulancia = datetime.utcnow()
+            paciente.status_ambulancia = "ACIONADA"  # Conforme fluxograma: ambulância acionada automaticamente
+            logger.info(f"✅ Paciente {decisao.protocolo} autorizado - Movido para Área de Transferência")
         else:
-            paciente.status = "REGULACAO_NEGADA"
-            status_message = f"Transferência negada pelo regulador - Motivo: {decisao.justificativa_negacao or 'Não especificado'}"
-            # Paciente volta para a fila de regulação para nova análise
-            logger.info(f"Paciente {decisao.protocolo} retornará à fila - Motivo: {decisao.justificativa_negacao}")
+            # NEGAR: Paciente volta para lista do hospital com status "Negado/Pendente"
+            paciente.status = status_final
+            paciente.justificativa_negacao = decisao.justificativa_negacao
+            logger.info(f"❌ Paciente {decisao.protocolo} negado - Retornará à fila do hospital com status NEGADO_PENDENTE")
         
         paciente.updated_at = datetime.utcnow()
-        
         db.commit()
         
-        db.commit()
+        logger.info(f"Decisão registrada: {decisao.protocolo} - {tipo_decisao} por {current_user.email}")
         
-        logger.info(f"Decisão registrada: {decisao.protocolo} - {decisao.decisao_regulador} por {current_user.email}")
-        
-        return {
+        # Preparar resposta baseada no tipo de decisão
+        response_data = {
             "message": status_message,
             "protocolo": decisao.protocolo,
-            "decisao": decisao.decisao_regulador,
+            "decisao": tipo_decisao,
             "unidade_destino": decisao.unidade_destino,
             "regulador": current_user.nome,
             "timestamp": datetime.utcnow().isoformat(),
@@ -1107,6 +1139,18 @@ async def registrar_decisao_regulador(
                 "rastreabilidade_completa": True
             }
         }
+        
+        # Adicionar informações específicas por tipo de decisão
+        if tipo_decisao == "ALTERADA_E_AUTORIZADA":
+            response_data["fluxo"] = "HOSPITAL → REGULAÇÃO → ALTERAÇÃO → TRANSFERÊNCIA"
+            response_data["unidade_destino_original"] = decisao.hospital_original
+        elif tipo_decisao == "AUTORIZADA":
+            response_data["fluxo"] = "HOSPITAL → REGULAÇÃO → TRANSFERÊNCIA"
+        else:
+            response_data["fluxo"] = "HOSPITAL → REGULAÇÃO → VOLTA PARA HOSPITAL"
+            response_data["justificativa"] = decisao.justificativa_negacao
+        
+        return response_data
         
     except HTTPException:
         raise
@@ -1201,11 +1245,11 @@ async def consultar_paciente(
                 continue
         
         # Se foi autorizada internação
-        if paciente.status == 'INTERNACAO_AUTORIZADA':
+        if paciente.status == 'EM_TRANSFERENCIA':
             historico_movimentacoes.append({
                 "data": paciente.updated_at.isoformat() if paciente.updated_at else datetime.utcnow().isoformat(),
                 "status_anterior": "EM_REGULACAO",
-                "status_novo": "INTERNACAO_AUTORIZADA",
+                "status_novo": "EM_TRANSFERENCIA",
                 "observacoes": f"Transferência autorizada para {paciente.unidade_destino}",
                 "responsavel": "Regulador Médico"
             })
@@ -1222,8 +1266,8 @@ async def consultar_paciente(
                 previsao_atendimento = "Próximas 4-8 horas"
             else:
                 previsao_atendimento = "Próximas 8-24 horas"
-        elif paciente.status == 'INTERNACAO_AUTORIZADA':
-            previsao_atendimento = "Aguardando vaga disponível"
+        elif paciente.status == 'EM_TRANSFERENCIA':
+            previsao_atendimento = "Ambulância acionada - Em transferência"
         
         return {
             "encontrado": True,
@@ -1783,7 +1827,7 @@ async def metricas_impacto(db: Session = Depends(get_db)):
             PacienteRegulacao.status == 'EM_REGULACAO'
         ).count()
         autorizados = db.query(PacienteRegulacao).filter(
-            PacienteRegulacao.status == 'INTERNACAO_AUTORIZADA'
+            PacienteRegulacao.status == 'EM_TRANSFERENCIA'
         ).count()
         
         # Buscar decisões da IA
@@ -1833,13 +1877,13 @@ async def metricas_impacto(db: Session = Depends(get_db)):
 
 @app.get("/pacientes-hospital-aguardando")
 async def listar_pacientes_hospital_aguardando(db: Session = Depends(get_db)):
-    """Lista pacientes que foram inseridos pelo hospital e aguardam regulação"""
+    """Lista pacientes que foram inseridos pelo hospital e aguardam regulação ou foram negados"""
     
     try:
-        # Buscar apenas pacientes com status 'AGUARDANDO_REGULACAO'
-        # Excluir pacientes que já foram regulados (INTERNACAO_AUTORIZADA, REGULACAO_NEGADA)
+        # Buscar pacientes com status 'AGUARDANDO_REGULACAO' ou 'NEGADO_PENDENTE'
+        # NEGADO_PENDENTE: pacientes que foram negados pela regulação e retornaram ao hospital
         pacientes = db.query(PacienteRegulacao).filter(
-            PacienteRegulacao.status == 'AGUARDANDO_REGULACAO'
+            PacienteRegulacao.status.in_(['AGUARDANDO_REGULACAO', 'NEGADO_PENDENTE'])
         ).order_by(PacienteRegulacao.data_solicitacao.desc()).all()
         
         resultado = []
@@ -1856,10 +1900,11 @@ async def listar_pacientes_hospital_aguardando(db: Session = Depends(get_db)):
                 "classificacao_risco": paciente.classificacao_risco,
                 "unidade_destino": paciente.unidade_destino,
                 "historico_paciente": paciente.historico_paciente,
-                "prioridade_descricao": paciente.prioridade_descricao
+                "prioridade_descricao": paciente.prioridade_descricao,
+                "justificativa_negacao": getattr(paciente, 'justificativa_negacao', None)
             })
         
-        logger.info(f"Retornando {len(resultado)} pacientes aguardando regulação")
+        logger.info(f"Retornando {len(resultado)} pacientes aguardando regulação ou negados")
         return resultado
         
     except Exception as e:
@@ -2045,7 +2090,7 @@ async def load_json_data(db: Session = Depends(get_db)):
             'em_regulacao': 'EM_REGULACAO',
             'admitidos': 'INTERNADA', 
             'alta': 'COM_ALTA',
-            'em_transito': 'INTERNACAO_AUTORIZADA'
+            'em_transito': 'EM_TRANSFERENCIA'
         }
         
         for status_key, df in processed_data.items():
@@ -2240,6 +2285,7 @@ async def processar_regulacao_ia(
             paciente_db.updated_at = datetime.utcnow()
         else:
             # Criar novo paciente se não existir (com valores padrão para campos obrigatórios)
+            # Status AGUARDANDO_REGULACAO para aparecer na fila do regulador
             novo_paciente = PacienteRegulacao(
                 protocolo=paciente.protocolo,
                 nome_completo=paciente.nome_completo or "Não informado",
@@ -2247,15 +2293,17 @@ async def processar_regulacao_ia(
                 cpf=paciente.cpf or "00000000000",
                 telefone_contato=paciente.telefone_contato or "00000000000",
                 data_solicitacao=datetime.utcnow(),
-                status='EM_REGULACAO',
+                status='AGUARDANDO_REGULACAO',  # Corrigido: deve ser AGUARDANDO_REGULACAO
                 especialidade=paciente.especialidade,
                 cid=paciente.cid,
                 cid_desc=paciente.cid_desc,
                 prontuario_texto=paciente.prontuario_texto,
                 historico_paciente=paciente.historico_paciente,
+                prioridade_descricao=paciente.prioridade_descricao,
                 score_prioridade=decisao["analise_decisoria"].get("score_prioridade"),
                 classificacao_risco=decisao["analise_decisoria"].get("classificacao_risco"),
-                justificativa_tecnica=decisao["analise_decisoria"].get("justificativa_clinica")
+                justificativa_tecnica=decisao["analise_decisoria"].get("justificativa_clinica"),
+                unidade_destino=decisao["analise_decisoria"].get("unidade_destino_sugerida")
             )
             db.add(novo_paciente)
         
@@ -2470,7 +2518,7 @@ async def solicitar_ambulancia(
             raise HTTPException(status_code=404, detail="Paciente não encontrado")
         
         # Verificar se paciente está autorizado
-        if paciente.status != "INTERNACAO_AUTORIZADA":
+        if paciente.status != "EM_TRANSFERENCIA":
             raise HTTPException(
                 status_code=400, 
                 detail=f"Paciente não está autorizado para transferência. Status atual: {paciente.status}"
@@ -2510,29 +2558,53 @@ async def listar_pacientes_transferencia(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["REGULADOR", "ADMIN"]))
 ):
-    """Listar pacientes autorizados e em transferência"""
+    """
+    Listar pacientes na Área de Transferência conforme DIAGRAMA_FLUXO_COMPLETO.md:
+    
+    Filtro SQL: WHERE status IN ('EM_TRANSFERENCIA', 'EM_TRANSITO', 'ADMITIDO')
+    
+    Fluxo de Status da Ambulância:
+    ACIONADA → A_CAMINHO → NO_LOCAL → TRANSPORTANDO → CONCLUIDA
+    """
     
     try:
-        # Buscar pacientes com status INTERNACAO_AUTORIZADA ou EM_TRANSFERENCIA
+        # Buscar pacientes com status de transferência ativa conforme fluxograma
         pacientes = db.query(PacienteRegulacao).filter(
-            PacienteRegulacao.status.in_(['INTERNACAO_AUTORIZADA', 'EM_TRANSFERENCIA'])
+            PacienteRegulacao.status.in_([
+                'EM_TRANSFERENCIA',  # Autorizado, ambulância acionada
+                'EM_TRANSITO',       # Ambulância transportando paciente
+                'ADMITIDO'           # Paciente chegou ao destino
+            ])
         ).order_by(PacienteRegulacao.updated_at.desc()).all()
         
         resultado = []
         for p in pacientes:
+            # Status da ambulância conforme fluxograma
+            status_ambulancia = getattr(p, 'status_ambulancia', None) or 'ACIONADA'
+            
+            # Se paciente está ADMITIDO, ambulância foi CONCLUIDA
+            if p.status == 'ADMITIDO':
+                status_ambulancia = 'CONCLUIDA'
+            elif p.status == 'EM_TRANSITO':
+                status_ambulancia = 'TRANSPORTANDO'
+            
             resultado.append({
                 "protocolo": p.protocolo,
-                "data_autorizacao": p.updated_at.isoformat() if p.updated_at else p.data_solicitacao.isoformat(),
+                "data_autorizacao": p.updated_at.isoformat() if p.updated_at else (p.data_solicitacao.isoformat() if p.data_solicitacao else None),
                 "especialidade": p.especialidade or "N/A",
                 "unidade_origem": p.unidade_solicitante or "N/A",
                 "unidade_destino": p.unidade_destino or "N/A",
                 "cidade_origem": p.cidade_origem or "N/A",
                 "tipo_transporte": getattr(p, 'tipo_transporte', None) or "USA",
-                "status_ambulancia": getattr(p, 'status_ambulancia', None) or ("SOLICITADA" if p.status == "EM_TRANSFERENCIA" else "PENDENTE"),
+                "status_ambulancia": status_ambulancia,
                 "status_paciente": p.status,
                 "classificacao_risco": p.classificacao_risco or "AMARELO",
                 "observacoes": getattr(p, 'observacoes_transferencia', None),
-                "data_solicitacao_ambulancia": getattr(p, 'data_solicitacao_ambulancia', None).isoformat() if getattr(p, 'data_solicitacao_ambulancia', None) else None
+                "data_solicitacao_ambulancia": getattr(p, 'data_solicitacao_ambulancia', None).isoformat() if getattr(p, 'data_solicitacao_ambulancia', None) else None,
+                # Dados de logística
+                "identificacao_ambulancia": getattr(p, 'identificacao_ambulancia', None),
+                "distancia_km": getattr(p, 'distancia_km', None),
+                "tempo_estimado_min": getattr(p, 'tempo_estimado_min', None)
             })
         
         logger.info(f"Listando {len(resultado)} pacientes em transferência")
@@ -2544,8 +2616,11 @@ async def listar_pacientes_transferencia(
 
 class AtualizarStatusAmbulanciaRequest(BaseModel):
     protocolo: str
-    novo_status: str  # 'SOLICITADA', 'A_CAMINHO', 'NO_LOCAL', 'TRANSPORTANDO', 'CONCLUIDA'
+    novo_status: str  # 'A_CAMINHO', 'NO_LOCAL', 'TRANSPORTANDO', 'CONCLUIDA'
     observacoes: Optional[str] = None
+    identificacao_ambulancia: Optional[str] = None
+    distancia_km: Optional[float] = None
+    tempo_estimado_min: Optional[int] = None
 
 @app.post("/atualizar-status-ambulancia")
 async def atualizar_status_ambulancia(
@@ -2553,7 +2628,15 @@ async def atualizar_status_ambulancia(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["REGULADOR", "ADMIN"]))
 ):
-    """Atualizar status da ambulância"""
+    """
+    Atualizar status da ambulância seguindo o fluxo do DIAGRAMA_FLUXO_COMPLETO.md:
+    
+    ACIONADA → A_CAMINHO → NO_LOCAL → TRANSPORTANDO → CONCLUIDA
+    
+    Quando CONCLUIDA:
+    - Status do paciente muda para ADMITIDO
+    - Paciente vai para Área de Auditoria (aguardando alta)
+    """
     
     try:
         # Buscar paciente
@@ -2564,13 +2647,43 @@ async def atualizar_status_ambulancia(
         if not paciente:
             raise HTTPException(status_code=404, detail="Paciente não encontrado")
         
+        # Validar status permitidos conforme fluxograma
+        status_permitidos = ['ACIONADA', 'A_CAMINHO', 'NO_LOCAL', 'TRANSPORTANDO', 'CONCLUIDA']
+        if request.novo_status not in status_permitidos:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Status inválido. Permitidos: {', '.join(status_permitidos)}"
+            )
+        
+        # Mapear status da ambulância para status do paciente
+        status_paciente_map = {
+            'ACIONADA': 'EM_TRANSFERENCIA',
+            'A_CAMINHO': 'EM_TRANSFERENCIA',
+            'NO_LOCAL': 'EM_TRANSFERENCIA',
+            'TRANSPORTANDO': 'EM_TRANSITO',
+            'CONCLUIDA': 'ADMITIDO'
+        }
+        
         # Atualizar status da ambulância
         paciente.status_ambulancia = request.novo_status
         
-        # Se ambulância concluiu, mudar status do paciente para INTERNADA
+        # Atualizar status do paciente conforme fluxo
+        novo_status_paciente = status_paciente_map.get(request.novo_status)
+        if novo_status_paciente:
+            paciente.status = novo_status_paciente
+        
+        # Atualizar dados de transferência se fornecidos
+        if request.identificacao_ambulancia:
+            paciente.identificacao_ambulancia = request.identificacao_ambulancia
+        if request.distancia_km:
+            paciente.distancia_km = request.distancia_km
+        if request.tempo_estimado_min:
+            paciente.tempo_estimado_min = request.tempo_estimado_min
+        
+        # Se ambulância concluiu (CONCLUIDA), paciente foi ADMITIDO no destino
         if request.novo_status == "CONCLUIDA":
-            paciente.status = "INTERNADA"
             paciente.data_internacao = datetime.utcnow()
+            logger.info(f"✅ Paciente {request.protocolo} ADMITIDO no destino - Transferência concluída")
         
         paciente.updated_at = datetime.utcnow()
         
@@ -2579,10 +2692,11 @@ async def atualizar_status_ambulancia(
         logger.info(f"Status ambulância atualizado: {request.protocolo} - {request.novo_status}")
         
         return {
-            "message": "Status da ambulância atualizado",
+            "message": f"Status atualizado para {request.novo_status}",
             "protocolo": request.protocolo,
             "status_ambulancia": request.novo_status,
             "status_paciente": paciente.status,
+            "fluxo": "ACIONADA → A_CAMINHO → NO_LOCAL → TRANSPORTANDO → CONCLUIDA",
             "timestamp": datetime.utcnow().isoformat()
         }
         
@@ -2592,6 +2706,208 @@ async def atualizar_status_ambulancia(
         logger.error(f"Erro ao atualizar status ambulância: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar status: {str(e)}")
+
+# ============================================================================
+# ÁREA DE AUDITORIA - Acompanhamento pós-transferência
+# ============================================================================
+
+@app.get("/pacientes-auditoria")
+async def listar_pacientes_auditoria(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(require_role(["REGULADOR", "ADMIN", "AUDITOR"]))
+):
+    """
+    Lista pacientes para auditoria conforme DIAGRAMA_FLUXO_COMPLETO.md:
+    
+    Pacientes ADMITIDOS que ainda não receberam ALTA.
+    Regra: Pacientes permanecem na auditoria até inserção da data/hora da Alta Hospitalar.
+    
+    Fluxo: ADMITIDO → (aguarda alta) → ALTA
+    """
+    
+    try:
+        # Buscar pacientes ADMITIDOS (chegaram ao destino, aguardando alta)
+        pacientes = db.query(PacienteRegulacao).filter(
+            PacienteRegulacao.status == 'ADMITIDO'
+        ).order_by(PacienteRegulacao.updated_at.desc()).all()
+        
+        resultado = []
+        for p in pacientes:
+            # Calcular tempo desde solicitação
+            tempo_total = None
+            if p.data_solicitacao:
+                tempo_total = (datetime.utcnow() - p.data_solicitacao).total_seconds() / 3600  # em horas
+            
+            resultado.append({
+                "protocolo": p.protocolo,
+                "especialidade": p.especialidade or "N/A",
+                "unidade_origem": p.unidade_solicitante or "N/A",
+                "unidade_destino": p.unidade_destino or "N/A",
+                "classificacao_risco": p.classificacao_risco or "AMARELO",
+                "data_solicitacao": p.data_solicitacao.isoformat() if p.data_solicitacao else None,
+                "data_internacao": getattr(p, 'data_internacao', None).isoformat() if getattr(p, 'data_internacao', None) else None,
+                "tempo_total_horas": round(tempo_total, 1) if tempo_total else None,
+                "status": p.status,
+                "data_alta": getattr(p, 'data_alta', None).isoformat() if getattr(p, 'data_alta', None) else None
+            })
+        
+        logger.info(f"Listando {len(resultado)} pacientes em auditoria (ADMITIDOS aguardando alta)")
+        return resultado
+        
+    except Exception as e:
+        logger.error(f"Erro ao listar pacientes em auditoria: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao listar pacientes: {str(e)}")
+
+class RegistrarAltaRequest(BaseModel):
+    protocolo: str
+    data_alta: str  # ISO format: "2024-12-27T14:30:00"
+    observacoes_alta: Optional[str] = None
+
+@app.post("/registrar-alta")
+async def registrar_alta_hospitalar(
+    request: RegistrarAltaRequest,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(require_role(["REGULADOR", "ADMIN", "AUDITOR"]))
+):
+    """
+    Registrar alta hospitalar conforme DIAGRAMA_FLUXO_COMPLETO.md:
+    
+    Fluxo: ADMITIDO → (registra alta) → ALTA
+    
+    Após registro da alta, paciente sai da área de auditoria.
+    """
+    
+    try:
+        # Buscar paciente
+        paciente = db.query(PacienteRegulacao).filter(
+            PacienteRegulacao.protocolo == request.protocolo
+        ).first()
+        
+        if not paciente:
+            raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        
+        # Conforme fluxograma, paciente deve estar ADMITIDO para receber alta
+        if paciente.status != 'ADMITIDO':
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Paciente não está ADMITIDO. Status atual: {paciente.status}. Apenas pacientes ADMITIDOS podem receber alta."
+            )
+        
+        # Validar data de alta
+        try:
+            data_alta = datetime.fromisoformat(request.data_alta.replace('Z', '+00:00'))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Formato de data inválido. Use ISO format.")
+        
+        # Registrar alta - Status final conforme fluxograma
+        paciente.status = "ALTA"
+        paciente.data_alta = data_alta
+        paciente.observacoes_alta = request.observacoes_alta
+        paciente.updated_at = datetime.utcnow()
+        
+        # Calcular tempo total de permanência
+        tempo_total = None
+        if paciente.data_solicitacao:
+            tempo_total = (data_alta - paciente.data_solicitacao).total_seconds() / 3600
+        
+        db.commit()
+        
+        logger.info(f"✅ Alta registrada: {request.protocolo} - Tempo total: {tempo_total:.1f}h")
+        
+        return {
+            "message": "Alta hospitalar registrada com sucesso",
+            "protocolo": request.protocolo,
+            "data_alta": data_alta.isoformat(),
+            "tempo_total_horas": round(tempo_total, 1) if tempo_total else None,
+            "status": "ALTA",
+            "fluxo_completo": "HOSPITAL → REGULAÇÃO → TRANSFERÊNCIA → ADMITIDO → ALTA",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao registrar alta: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao registrar alta: {str(e)}")
+
+@app.get("/historico-paciente/{protocolo}")
+async def buscar_historico_paciente(
+    protocolo: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Buscar histórico completo de um paciente (para transparência e auditoria).
+    """
+    
+    try:
+        # Buscar paciente
+        paciente = db.query(PacienteRegulacao).filter(
+            PacienteRegulacao.protocolo == protocolo
+        ).first()
+        
+        if not paciente:
+            raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        
+        # Buscar histórico de decisões
+        historico_decisoes = db.query(HistoricoDecisoes).filter(
+            HistoricoDecisoes.protocolo == protocolo
+        ).order_by(HistoricoDecisoes.created_at.asc()).all()
+        
+        # Montar timeline de movimentações
+        timeline = []
+        
+        # Solicitação inicial
+        if paciente.data_solicitacao:
+            timeline.append({
+                "data": paciente.data_solicitacao.isoformat(),
+                "evento": "SOLICITACAO_REGULACAO",
+                "descricao": "Paciente inserido no sistema pela unidade de origem",
+                "responsavel": "Hospital"
+            })
+        
+        # Decisões da IA e regulador
+        for decisao in historico_decisoes:
+            timeline.append({
+                "data": decisao.created_at.isoformat(),
+                "evento": "DECISAO_REGISTRADA",
+                "descricao": f"Decisão processada - Validador: {decisao.usuario_validador or 'IA'}",
+                "responsavel": decisao.usuario_validador or "Sistema IA"
+            })
+        
+        # Entrega no destino
+        if getattr(paciente, 'data_entrega_destino', None):
+            timeline.append({
+                "data": paciente.data_entrega_destino.isoformat(),
+                "evento": "ENTREGUE_DESTINO",
+                "descricao": f"Paciente entregue em {paciente.unidade_destino}",
+                "responsavel": "Equipe de Transferência"
+            })
+        
+        # Alta hospitalar
+        if getattr(paciente, 'data_alta', None):
+            timeline.append({
+                "data": paciente.data_alta.isoformat(),
+                "evento": "ALTA_HOSPITALAR",
+                "descricao": "Alta médica definitiva registrada",
+                "responsavel": "Equipe Médica"
+            })
+        
+        return {
+            "protocolo": protocolo,
+            "status_atual": paciente.status,
+            "especialidade": paciente.especialidade,
+            "unidade_origem": paciente.unidade_solicitante,
+            "unidade_destino": paciente.unidade_destino,
+            "timeline": timeline,
+            "total_eventos": len(timeline)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao buscar histórico: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar histórico: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,29 +1,27 @@
 # =============================================================================
-# DOCKER COMPOSE - SISTEMA COMPLETO DE REGULAÇÃO SES-GO
+# DOCKER COMPOSE - SISTEMA COMPLETO DE REGULACAO SES-GO
 # =============================================================================
-# Este arquivo inicia TODOS os serviços necessários para o sistema funcionar:
+# Este arquivo inicia TODOS os servicos necessarios para o sistema funcionar:
 # - PostgreSQL (banco de dados)
 # - Redis (cache)
 # - Ollama/Llama 3 (IA generativa)
 # - Backend Principal (FastAPI + BioBERT)
-# - MS-Ingestao (memória de curto prazo)
+# - MS-Ingestao (memoria de curto prazo)
 # - Frontend (React/Expo Web)
 # =============================================================================
 # 
 # COMO USAR:
-#   docker-compose -f docker-compose.full.yml up -d
+#   docker compose -f docker-compose.full.yml up -d
 #
 # VERIFICAR STATUS:
-#   docker-compose -f docker-compose.full.yml ps
+#   docker compose -f docker-compose.full.yml ps
 #
 # VER LOGS:
-#   docker-compose -f docker-compose.full.yml logs -f
+#   docker compose -f docker-compose.full.yml logs -f
 #
 # PARAR TUDO:
-#   docker-compose -f docker-compose.full.yml down
+#   docker compose -f docker-compose.full.yml down
 # =============================================================================
-
-version: '3.8'
 
 services:
   # ===========================================================================
@@ -132,6 +130,11 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      - ./dados_admitidos.json:/app/dados_admitidos.json:ro
+      - ./dados_alta.json:/app/dados_alta.json:ro
+      - ./dados_em_regulacao.json:/app/dados_em_regulacao.json:ro
+      - ./dados_em_transito.json:/app/dados_em_transito.json:ro
+      - ./dados_ultima_atualizacao.json:/app/dados_ultima_atualizacao.json:ro
       - biobert_cache:/root/.cache/huggingface
     networks:
       - regulacao_network
@@ -202,26 +205,31 @@ services:
       ms-ingestao:
         condition: service_healthy
       ollama:
-        condition: service_healthy
+        condition: service_started
     networks:
       - regulacao_network
+    restart: "no"
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        echo "=== Inicializando serviços ==="
+        echo "=== Inicializando servicos ==="
         
-        # Baixar modelo Llama 3 no Ollama (se não existir)
+        # Aguardar Ollama estar pronto
+        echo "Aguardando Ollama..."
+        sleep 30
+        
+        # Baixar modelo Llama 3 no Ollama (se nao existir)
         echo "Verificando modelo Llama 3..."
         curl -X POST http://ollama:11434/api/pull -d '{"name": "llama3"}' || true
         
         # Aguardar backend estar pronto
         sleep 10
         
-        # Sincronizar dados de ocupação
-        echo "Sincronizando dados de ocupação..."
+        # Sincronizar dados de ocupacao
+        echo "Sincronizando dados de ocupacao..."
         curl -X POST http://backend:8000/sincronizar-ocupacao || true
         
-        echo "=== Inicialização concluída ==="
+        echo "=== Inicializacao concluida ==="
 
 # =============================================================================
 # VOLUMES PERSISTENTES

@@ -90,6 +90,7 @@ const TransparenciaItem: React.FC<TransparenciaItemProps> = ({ label, ativo }) =
 
 const DashboardAuditoria: React.FC = () => {
   const [dados, setDados] = useState<DadosAuditoria | null>(null);
+  const [pacientesAuditoria, setPacientesAuditoria] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -99,6 +100,22 @@ const DashboardAuditoria: React.FC = () => {
   const carregarDados = async () => {
     try {
       setErro(null);
+      
+      // Buscar pacientes em auditoria (aguardando alta)
+      try {
+        const auditResponse = await fetch(`${API_URL}/pacientes-auditoria`, {
+          headers: {
+            'Authorization': 'Bearer token_placeholder'
+          }
+        });
+        
+        if (auditResponse.ok) {
+          const auditData = await auditResponse.json();
+          setPacientesAuditoria(auditData);
+        }
+      } catch (e) {
+        console.log('Endpoint de auditoria não disponível, usando fallback');
+      }
       
       // Tentar carregar dados de auditoria (endpoint público simplificado)
       const response = await fetch(`${API_URL}/dashboard/leitos`);
@@ -293,6 +310,32 @@ const DashboardAuditoria: React.FC = () => {
               ))}
             </View>
           </View>
+
+          {/* Pacientes Aguardando Alta (ADMITIDOS) */}
+          {pacientesAuditoria.length > 0 && (
+            <View style={styles.secao}>
+              <Text style={styles.secaoTitulo}>🏥 Pacientes ADMITIDOS - Aguardando Alta ({pacientesAuditoria.length})</Text>
+              <View style={styles.statusContainer}>
+                {pacientesAuditoria.slice(0, 5).map((paciente: any) => (
+                  <View key={paciente.protocolo} style={styles.pacienteAuditoriaItem}>
+                    <View style={styles.pacienteAuditoriaHeader}>
+                      <Text style={styles.pacienteProtocolo}>{paciente.protocolo}</Text>
+                      <Text style={styles.pacienteTempo}>
+                        {paciente.tempo_total_horas ? `${paciente.tempo_total_horas}h internado` : 'N/A'}
+                      </Text>
+                    </View>
+                    <Text style={styles.pacienteDestino}>{paciente.unidade_destino}</Text>
+                    <Text style={styles.pacienteEspecialidade}>{paciente.especialidade}</Text>
+                  </View>
+                ))}
+                {pacientesAuditoria.length > 5 && (
+                  <Text style={styles.verMaisText}>
+                    + {pacientesAuditoria.length - 5} pacientes aguardando alta
+                  </Text>
+                )}
+              </View>
+            </View>
+          )}
 
           {/* Transparência e Conformidade */}
           <View style={styles.secao}>
@@ -590,6 +633,47 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textSecondary,
     marginBottom: 4,
+  },
+  // Estilos para pacientes em auditoria
+  pacienteAuditoriaItem: {
+    backgroundColor: '#F5F5F5',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.primary,
+  },
+  pacienteAuditoriaHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  pacienteProtocolo: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: Colors.primary,
+  },
+  pacienteTempo: {
+    fontSize: 12,
+    color: '#FF9800',
+    fontWeight: '600',
+  },
+  pacienteDestino: {
+    fontSize: 13,
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  pacienteEspecialidade: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  verMaisText: {
+    fontSize: 12,
+    color: Colors.primary,
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });
 

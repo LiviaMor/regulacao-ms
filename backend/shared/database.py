@@ -21,7 +21,7 @@ class PacienteRegulacao(Base):
     id = Column(Integer, primary_key=True, index=True)
     protocolo = Column(String, unique=True, index=True)
     data_solicitacao = Column(DateTime)
-    status = Column(String)  # EM_REGULACAO, INTERNACAO_AUTORIZADA, INTERNADA, COM_ALTA, REGULACAO_NEGADA, AGUARDANDO_REGULACAO
+    status = Column(String)  # AGUARDANDO_REGULACAO, EM_REGULACAO, EM_TRANSFERENCIA, EM_TRANSITO, ADMITIDO, ALTA, NEGADO_PENDENTE
     tipo_leito = Column(String)
     especialidade = Column(String)
     cpf_mascarado = Column(String)
@@ -63,6 +63,19 @@ class PacienteRegulacao(Base):
     data_internacao = Column(DateTime, nullable=True)
     observacoes_transferencia = Column(Text, nullable=True)
     
+    # Dados obrigatórios de transferência (conforme especificação)
+    identificacao_ambulancia = Column(String, nullable=True)  # Placa/ID da ambulância
+    distancia_km = Column(Float, nullable=True)  # Distância entre unidades
+    tempo_estimado_min = Column(Integer, nullable=True)  # Tempo estimado de transporte
+    
+    # ============================================================================
+    # CAMPOS DE AUDITORIA E ALTA
+    # ============================================================================
+    data_entrega_destino = Column(DateTime, nullable=True)  # Quando paciente foi entregue
+    data_alta = Column(DateTime, nullable=True)  # Data/hora da alta hospitalar
+    observacoes_alta = Column(Text, nullable=True)  # Observações da alta
+    justificativa_negacao = Column(Text, nullable=True)  # Motivo da negação (se negado)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -75,6 +88,7 @@ class HistoricoDecisoes(Base):
     usuario_validador = Column(String, nullable=True)
     decisao_final = Column(Text, nullable=True)
     tempo_processamento = Column(Float)
+    microservico_origem = Column(String, nullable=True)  # MS-Hospital, MS-Regulacao, MS-Transferencia
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Usuario(Base):

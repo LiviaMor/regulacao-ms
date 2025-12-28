@@ -203,13 +203,14 @@ const AreaHospital = () => {
 
   const renderPacienteAguardando = ({ item }: { item: PacienteAguardando }) => {
     const riskColor = getRiskColor(item.classificacao_risco || 'AMARELO');
+    const isNegado = item.status === 'NEGADO_PENDENTE';
     
     return (
-      <View style={[styles.pacienteCard, { borderLeftColor: riskColor }]}>
+      <View style={[styles.pacienteCard, { borderLeftColor: isNegado ? Colors.danger : riskColor }]}>
         <View style={styles.pacienteHeader}>
           <Text style={styles.protocolo}>{item.protocolo}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: Colors.warning }]}>
-            <Text style={styles.statusText}>AGUARDANDO</Text>
+          <View style={[styles.statusBadge, { backgroundColor: isNegado ? Colors.danger : Colors.warning }]}>
+            <Text style={styles.statusText}>{isNegado ? 'NEGADO' : 'AGUARDANDO'}</Text>
           </View>
         </View>
         
@@ -240,7 +241,16 @@ const AreaHospital = () => {
             </Text>
           </View>
           
-          {item.justificativa_tecnica && (
+          {isNegado && (item as any).justificativa_negacao && (
+            <View style={[styles.justificativaContainer, { borderLeftColor: Colors.danger }]}>
+              <Text style={[styles.justificativaLabel, { color: Colors.danger }]}>Motivo da Negação:</Text>
+              <Text style={styles.justificativa} numberOfLines={3}>
+                {(item as any).justificativa_negacao}
+              </Text>
+            </View>
+          )}
+          
+          {!isNegado && item.justificativa_tecnica && (
             <View style={styles.justificativaContainer}>
               <Text style={styles.justificativaLabel}>Análise da IA:</Text>
               <Text style={styles.justificativa} numberOfLines={3}>

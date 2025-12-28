@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-PIPELINE INTELIGENTE DE HOSPITAIS DE GOIÁS - RAG READY
+PIPELINE INTELIGENTE DE HOSPITAIS DE GOIAS - RAG READY
 Sistema de IA para encaminhamento correto baseado em especialidades reais
-Preparado para integração com Llama 3 e outros LLMs (RAG - Retrieval-Augmented Generation)
+Preparado para integracao com Llama 3 e outros LLMs (RAG - Retrieval-Augmented Generation)
 """
 
 from typing import Dict, List, Optional, Tuple, Any
@@ -11,6 +11,21 @@ import json
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+
+class HospitalGoias:
+    """Classe para representar um hospital com suas especialidades"""
+    
+    def __init__(self, nome: str, cidade: str, tipo: str, especialidades: List[str], 
+                 capacidade: str, observacoes: str = ""):
+        self.nome = nome
+        self.cidade = cidade
+        self.tipo = tipo  # REFERENCIA, REGIONAL, ESPECIALIZADO
+        self.especialidades = especialidades
+        self.capacidade = capacidade  # ALTA, MEDIA, BAIXA
+        self.observacoes = observacoes
+        self.score_disponibilidade = 10  # Simulado - em producao viria de API real
+
 
 class PipelineDecisaoRegulacao:
     """
@@ -418,20 +433,6 @@ Com base nos dados do paciente e no contexto de hospitais disponíveis, selecion
                 "validado": False,
                 "erro": str(e)
             }
-
-
-class HospitalGoias:
-    """Classe para representar um hospital com suas especialidades"""
-    
-    def __init__(self, nome: str, cidade: str, tipo: str, especialidades: List[str], 
-                 capacidade: str, observacoes: str = ""):
-        self.nome = nome
-        self.cidade = cidade
-        self.tipo = tipo  # REFERENCIA, REGIONAL, ESPECIALIZADO
-        self.especialidades = especialidades
-        self.capacidade = capacidade  # ALTA, MEDIA, BAIXA
-        self.observacoes = observacoes
-        self.score_disponibilidade = 10  # Simulado - em produção viria de API real
 
 
 class PipelineHospitaisGoias:

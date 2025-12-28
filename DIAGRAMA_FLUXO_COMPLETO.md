@@ -154,8 +154,8 @@
 │         │                  │                  │                        │
 │         ▼                  ▼                  ▼                        │
 │  Status:            Status:            Status:                        │
-│  INTERNACAO_        REGULACAO_         INTERNACAO_                    │
-│  AUTORIZADA         NEGADA             AUTORIZADA                     │
+│  EM_                NEGADO_            EM_                            │
+│  TRANSFERENCIA      PENDENTE           TRANSFERENCIA                  │
 │                                                                         │
 │  Vai para           Volta para         Vai para                       │
 │  Transferência      Hospital           Transferência                  │
@@ -183,16 +183,16 @@
 │  Endpoint: GET /pacientes-transferencia                                │
 │  Auth: Bearer Token (REGULADOR/ADMIN)                                  │
 │                                                                         │
-│  Filtro SQL: WHERE status IN ('INTERNACAO_AUTORIZADA',                │
-│                                'EM_TRANSFERENCIA')                     │
+│  Filtro SQL: WHERE status IN ('EM_TRANSFERENCIA',                     │
+│                                'EM_TRANSITO', 'ADMITIDO')              │
 │                                                                         │
 │  Lista exibida:                                                        │
 │  ┌──────────────────────────────────────────────────────────┐         │
 │  │ REG-2025-001 | CARDIOLOGIA | VERMELHO                    │         │
 │  │ Origem: HOSPITAL MUNICIPAL GOIANIA                        │         │
 │  │ Destino: HOSPITAL ESTADUAL DR ALBERTO RASSI              │         │
-│  │ Status: INTERNACAO_AUTORIZADA                            │         │
-│  │ Ambulância: PENDENTE                                      │         │
+│  │ Status: EM_TRANSFERENCIA                             │         │
+│  │ Ambulância: ACIONADA                                 │         │
 │  │                                                           │         │
 │  │ [🚑 SOLICITAR AMBULÂNCIA]                                │         │
 │  └──────────────────────────────────────────────────────────┘         │
@@ -219,7 +219,7 @@
 │  │ BANCO: pacientes_regulacao                                  │      │
 │  │ • status → EM_TRANSFERENCIA                                 │      │
 │  │ • tipo_transporte → USA/USB/AEROMÉDICO                     │      │
-│  │ • status_ambulancia → SOLICITADA                           │      │
+│  │ • status_ambulancia → ACIONADA                             │      │
 │  │ • data_solicitacao_ambulancia → NOW()                      │      │
 │  │ • observacoes_transferencia → texto                        │      │
 │  └─────────────────────────────────────────────────────────────┘      │
@@ -235,12 +235,12 @@
 │  Fluxo de Status:                                                      │
 │  ┌──────────────────────────────────────────────────────────┐         │
 │  │                                                           │         │
-│  │  SOLICITADA → A_CAMINHO → NO_LOCAL → TRANSPORTANDO      │         │
+│  │  ACIONADA → A_CAMINHO → NO_LOCAL → TRANSPORTANDO         │         │
 │  │                                                           │         │
 │  │      ↓            ↓           ↓            ↓             │         │
 │  │                                                           │         │
-│  │  Aguardando   Ambulância   Chegou no   Paciente em      │         │
-│  │  ambulância   a caminho    hospital    transporte       │         │
+│  │  Ambulância   Ambulância   Chegou no   Paciente em      │         │
+│  │  acionada     a caminho    hospital    transporte       │         │
 │  │                            origem                         │         │
 │  └──────────────────────────────────────────────────────────┘         │
 │                                    │                                    │
@@ -251,7 +251,7 @@
 │  │  Paciente chegou ao hospital destino                     │         │
 │  │                                                           │         │
 │  │  BANCO: pacientes_regulacao                              │         │
-│  │  • status → INTERNADA                                    │         │
+│  │  • status → ADMITIDO                                     │         │
 │  │  • data_internacao → NOW()                               │         │
 │  │  • status_ambulancia → CONCLUIDA                         │         │
 │  └──────────────────────────────────────────────────────────┘         │
@@ -302,10 +302,11 @@
 |-------|---------------|------|--------------|--------------|
 | 1 | - | Hospital insere | AGUARDANDO_REGULACAO | Fila Regulação |
 | 2 | AGUARDANDO_REGULACAO | IA processa | AGUARDANDO_REGULACAO | Fila Regulação |
-| 3 | AGUARDANDO_REGULACAO | Regulador aprova | INTERNACAO_AUTORIZADA | Transferência |
-| 4 | INTERNACAO_AUTORIZADA | Solicita ambulância | EM_TRANSFERENCIA | Transferência |
-| 5 | EM_TRANSFERENCIA | Ambulância conclui | INTERNADA | Consulta Pública |
-| 6 | INTERNADA | Paciente recebe alta | COM_ALTA | Consulta Pública |
+| 3 | AGUARDANDO_REGULACAO | Regulador aprova | EM_TRANSFERENCIA | Transferência |
+| 4 | EM_TRANSFERENCIA | Ambulância transporta | EM_TRANSITO | Transferência |
+| 5 | EM_TRANSITO | Paciente chega | ADMITIDO | Consulta Pública |
+| 6 | ADMITIDO | Paciente recebe alta | ALTA | Consulta Pública |
+| - | AGUARDANDO_REGULACAO | Regulador nega | NEGADO_PENDENTE | Fila Hospital |
 
 ## 🔐 SEGURANÇA EM CADA ETAPA
 
@@ -321,5 +322,5 @@
 
 ---
 
-**Data**: 27/12/2024  
+**Data**: 28/12/2024  
 **Status**: ✅ FLUXO COMPLETO VALIDADO E FUNCIONANDO

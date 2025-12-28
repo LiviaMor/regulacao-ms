@@ -397,10 +397,11 @@ async def processar_regulacao_ia(
             paciente_db.updated_at = datetime.utcnow()
         else:
             # Criar novo paciente se não existir
+            # Status AGUARDANDO_REGULACAO para aparecer na fila do regulador
             novo_paciente = PacienteRegulacao(
                 protocolo=paciente.protocolo,
                 data_solicitacao=datetime.utcnow(),
-                status='EM_REGULACAO',
+                status='AGUARDANDO_REGULACAO',  # Corrigido: deve ser AGUARDANDO_REGULACAO
                 especialidade=paciente.especialidade,
                 prontuario_texto=paciente.prontuario_texto,
                 score_prioridade=decisao.get("analise_decisoria", {}).get("score_prioridade") or decisao.get("score_adequacao", 5),
@@ -507,15 +508,15 @@ async def registrar_decisao_regulador(
         # Determinar tipo de decisão
         if decisao.decisao_alterada:
             tipo_decisao = "ALTERADA_E_AUTORIZADA"
-            status_final = "INTERNACAO_AUTORIZADA"
+            status_final = "EM_TRANSFERENCIA"
             status_message = f"Decisão alterada e autorizada pelo regulador - Hospital alterado de '{decisao.hospital_original}' para '{decisao.unidade_destino}'"
         elif decisao.decisao_regulador == 'AUTORIZADA':
             tipo_decisao = "AUTORIZADA"
-            status_final = "INTERNACAO_AUTORIZADA"
-            status_message = "Transferência autorizada pelo regulador"
+            status_final = "EM_TRANSFERENCIA"
+            status_message = "Transferência autorizada pelo regulador - Ambulância acionada"
         else:
             tipo_decisao = "NEGADA"
-            status_final = "AGUARDANDO_REGULACAO"  # Volta para fila do hospital
+            status_final = "NEGADO_PENDENTE"  # Volta para fila do hospital com status negado
             status_message = f"Transferência negada pelo regulador - Motivo: {decisao.justificativa_negacao or 'Não especificado'}"
 
         # Registrar no histórico de decisões (AUDITORIA COMPLETA)
@@ -545,9 +546,12 @@ async def registrar_decisao_regulador(
         db.add(historico)
         
         # Atualizar status do paciente baseado na decisão
-        if status_final == "INTERNACAO_AUTORIZADA":
+        if status_final == "EM_TRANSFERENCIA":
             paciente.status = status_final
             paciente.unidade_destino = decisao.unidade_destino
+            paciente.tipo_transporte = decisao.tipo_transporte
+            paciente.data_solicitacao_ambulancia = datetime.utcnow()
+            paciente.status_ambulancia = "ACIONADA"
             
             # Comunicar com MS-Transferencia para iniciar logística
             try:
@@ -563,10 +567,11 @@ async def registrar_decisao_regulador(
             except Exception as e:
                 logger.warning(f"⚠️ Erro ao comunicar com MS-Transferencia: {e}")
                 
-        elif status_final == "AGUARDANDO_REGULACAO":
-            # NEGAR: Volta para fila do hospital
+        elif status_final == "NEGADO_PENDENTE":
+            # NEGAR: Volta para fila do hospital com status negado
             paciente.status = status_final
-            logger.info(f"❌ Paciente {decisao.protocolo} retornará à fila do hospital - Motivo: {decisao.justificativa_negacao}")
+            paciente.justificativa_negacao = decisao.justificativa_negacao
+            logger.info(f"❌ Paciente {decisao.protocolo} retornará à fila do hospital com status NEGADO_PENDENTE - Motivo: {decisao.justificativa_negacao}")
         
         paciente.updated_at = datetime.utcnow()
         db.commit()
@@ -637,11 +642,11 @@ async def estatisticas_regulacao(
         ).count()
         
         autorizadas = db.query(PacienteRegulacao).filter(
-            PacienteRegulacao.status == 'INTERNACAO_AUTORIZADA'
+            PacienteRegulacao.status == 'EM_TRANSFERENCIA'
         ).count()
         
         negadas = db.query(PacienteRegulacao).filter(
-            PacienteRegulacao.status == 'REGULACAO_NEGADA'
+            PacienteRegulacao.status == 'NEGADO_PENDENTE'
         ).count()
         
         # Contar por classificação de risco

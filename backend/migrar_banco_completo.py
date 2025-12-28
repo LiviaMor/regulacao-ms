@@ -39,6 +39,13 @@ try:
         ("data_solicitacao_ambulancia", "DATETIME" if dialect_name == 'sqlite' else "TIMESTAMP"),
         ("data_internacao", "DATETIME" if dialect_name == 'sqlite' else "TIMESTAMP"),
         ("observacoes_transferencia", "TEXT"),
+        ("identificacao_ambulancia", "VARCHAR(50)"),
+        ("distancia_km", "FLOAT" if dialect_name == 'sqlite' else "REAL"),
+        ("tempo_estimado_min", "INTEGER"),
+        ("data_entrega_destino", "DATETIME" if dialect_name == 'sqlite' else "TIMESTAMP"),
+        ("data_alta", "DATETIME" if dialect_name == 'sqlite' else "TIMESTAMP"),
+        ("observacoes_alta", "TEXT"),
+        ("justificativa_negacao", "TEXT"),
     ]
     
     todas_colunas = colunas_lgpd + colunas_transferencia

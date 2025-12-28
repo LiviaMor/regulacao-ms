@@ -322,19 +322,19 @@ async def estatisticas_hospital(
         ).count()
         
         total_autorizados = db.query(PacienteRegulacao).filter(
-            PacienteRegulacao.status == 'INTERNACAO_AUTORIZADA'
+            PacienteRegulacao.status == 'EM_TRANSFERENCIA'
         ).count()
         
         total_negados = db.query(PacienteRegulacao).filter(
-            PacienteRegulacao.status == 'REGULACAO_NEGADA'
+            PacienteRegulacao.status == 'NEGADO_PENDENTE'
         ).count()
         
         return {
             "hospital": current_user.unidade_vinculada or "Hospital",
             "estatisticas": {
                 "aguardando_regulacao": total_aguardando,
-                "internacao_autorizada": total_autorizados,
-                "regulacao_negada": total_negados,
+                "em_transferencia": total_autorizados,
+                "negado_pendente": total_negados,
                 "total_solicitacoes": total_aguardando + total_autorizados + total_negados
             },
             "timestamp": datetime.utcnow().isoformat()

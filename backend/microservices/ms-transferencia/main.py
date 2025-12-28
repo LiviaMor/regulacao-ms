@@ -412,9 +412,9 @@ async def pacientes_aguardando_ambulancia(
     """Lista pacientes aguardando ambulância (para aba Transferência do frontend)"""
     
     try:
-        # Buscar pacientes com status INTERNACAO_AUTORIZADA
+        # Buscar pacientes com status EM_TRANSFERENCIA ou EM_TRANSITO
         pacientes = db.query(PacienteRegulacao).filter(
-            PacienteRegulacao.status == 'INTERNACAO_AUTORIZADA'
+            PacienteRegulacao.status.in_(['EM_TRANSFERENCIA', 'EM_TRANSITO', 'ADMITIDO'])
         ).order_by(PacienteRegulacao.updated_at.desc()).all()
         
         resultado = []
