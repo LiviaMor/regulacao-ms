@@ -1,10 +1,46 @@
+
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=28&pause=1000&width=435&lines=LIFE+IA+)](https://git.io/typing-svg)
+
 # LIFE IA - Regulação Autônoma
 
-Sistema de Regulação Hospitalar Inteligente para a Secretaria de Estado da Saúde de Goiás (SES-GO).
+### Modelos de IA
+![BioBERT](https://img.shields.io/badge/🧬_BioBERT-v1.1_(60%25)-FF6F00?style=for-the-badge)
+![Llama](https://img.shields.io/badge/🦙_Llama_3-8B_(10%25)-7C3AED?style=for-the-badge)
+![Tesseract](https://img.shields.io/badge/📄_Tesseract-OCR_(30%25)-4285F4?style=for-the-badge)
+
+### Tecnologias
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![React Native](https://img.shields.io/badge/React_Native-Expo-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+
+### Conformidade
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+![Open Source](https://img.shields.io/badge/IA-100%25_Aberta-brightgreen?style=for-the-badge)
+![LGPD](https://img.shields.io/badge/LGPD-Compliant-blue?style=for-the-badge)
+
+
+Sistema de Regulação Hospitalar Inteligente Desenvolvido para o Prêmio Goiás Aberto para IA – GO.IA - Chamada Pública FAPEG nº 34/2025 
+
+## Desenvolvido
+**Proponente:** 
+```bash
+Livia Moreira Rocha - Desenvolvedora Junior - Odontóloga - Experiência em Saúde Pública
+```
+[![LiviaMor](https://img.shields.io/badge/GitHub-LiviaMor-181717?style=flat-square&logo=github)](https://github.com/LiviaMor)
+
+## Equipe
+```bash
+Sebastião Relson Reis da Luz - Desenvolvedor Sênior - Ampla Experiência em Retrieval-Augmented Generation
+```
+[![Relson](https://img.shields.io/badge/GitHub-relson-181717?style=flat-square&logo=github)](https://github.com/relson)
 
 ## Visão Geral
 
-O LIFE IA é uma plataforma de regulação médica que utiliza Inteligência Artificial para otimizar o fluxo de pacientes na rede hospitalar estadual de Goiás. O sistema integra BioBERT (análise de textos médicos), Llama 3 (interpretação contextual) e algoritmos de matchmaking logístico.
+O LIFE IA é uma plataforma de regulação médica que utiliza Inteligência Artificial para otimizar o fluxo de pacientes na rede hospitalar estadual de Goiás. 
+O sistema integra BioBERT (análise de textos médicos), Llama 3 (interpretação contextual) e algoritmos de matchmaking logístico.
 
 ### Principais Funcionalidades
 
@@ -41,8 +77,8 @@ O LIFE IA é uma plataforma de regulação médica que utiliza Inteligência Art
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/ses-go/life-ia-regulacao.git
-cd life-ia-regulacao
+git clone https://github.com/LiviaMor/regulacao-ms.git
+cd regulacao-ms
 ```
 
 ### 2. Configure as variáveis de ambiente
@@ -114,9 +150,10 @@ docker run -d --name postgres-regulacao \
 ## Estrutura do Projeto
 
 ```
-life-ia-regulacao/
+regulacao-ms/
 ├── backend/                    # API FastAPI + Serviços de IA
 │   ├── main_unified.py         # API principal unificada
+│   ├── requirements.txt        # Dependências Python
 │   ├── shared/                 # Modelos e utilitários compartilhados
 │   │   └── database.py         # Modelos SQLAlchemy
 │   └── microservices/          # Serviços especializados
@@ -126,11 +163,14 @@ life-ia-regulacao/
 │           ├── matchmaker_logistico.py # Algoritmo de alocação
 │           └── xai_explicabilidade.py  # Explicabilidade das decisões
 ├── regulacao-app/              # Frontend React Native/Expo
-│   ├── app/                    # Rotas e telas
+│   ├── app/                    # Rotas e telas (tabs)
 │   └── components/             # Componentes reutilizáveis
 ├── docker-compose.full.yml     # Orquestração de containers
 ├── start-docker.ps1            # Script de inicialização (Windows)
-└── start-docker.sh             # Script de inicialização (Linux/Mac)
+├── start-docker.sh             # Script de inicialização (Linux/Mac)
+├── PIPELINE_HOSPITAIS_GOIAS_IMPLEMENTADO.md  # Mapeamento de hospitais
+├── PIPELINE_RAG_FOCADO_IMPLEMENTADO.md       # Pipeline RAG
+└── Projeto Regulacao.md        # Proposta do projeto (FAPEG)
 ```
 
 ## Comandos Úteis
@@ -215,8 +255,7 @@ Documentação detalhada em:
 
 ## Licença
 
-Este projeto é desenvolvido para a Secretaria de Estado da Saúde de Goiás (SES-GO).
-Código-fonte disponível sob licença MIT para fins de transparência e auditabilidade.
+MIT
 
 ## Suporte
 
