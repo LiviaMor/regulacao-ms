@@ -1,5 +1,5 @@
 /**
- * ÁREA DE AUDITORIA - PAIC-REGULA
+ * ÁREA DE AUDITORIA - LIFE IA
  * 
  * Componente para gestão de pacientes ADMITIDOS aguardando alta.
  * Conforme DIAGRAMA_FLUXO_COMPLETO.md:

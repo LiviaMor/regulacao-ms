@@ -1,5 +1,5 @@
 /**
- * Tela de Auditoria - PAIC-REGULA
+ * Tela de Auditoria - LIFE IA
  * 
  * Conforme DIAGRAMA_FLUXO_COMPLETO.md:
  * - Usuários logados (REGULADOR/ADMIN/AUDITOR): Área de Auditoria com gestão de altas

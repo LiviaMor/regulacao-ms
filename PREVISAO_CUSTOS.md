@@ -1,4 +1,4 @@
-
+﻿
 # 🏥 Módulo de Previsão de Custo
 
 **Autor**: Livia Mor  
@@ -7,7 +7,7 @@
 
 ## 1. Visão Geral
 
-Este documento descreve a arquitetura e o funcionamento do **Módulo de Previsão de Custo de Internação**, uma nova funcionalidade proposta para o sistema PAIC-Regula. O objetivo deste módulo é estimar o custo financeiro de uma internação hospitalar no momento da regulação do paciente, fornecendo uma ferramenta valiosa para a gestão de recursos do SUS.
+Este documento descreve a arquitetura e o funcionamento do **Módulo de Previsão de Custo de Internação**, uma nova funcionalidade proposta para o sistema LIFE IA. O objetivo deste módulo é estimar o custo financeiro de uma internação hospitalar no momento da regulação do paciente, fornecendo uma ferramenta valiosa para a gestão de recursos do SUS.
 
 ## 2. Objetivo
 
@@ -19,15 +19,15 @@ O objetivo principal é prover uma estimativa de custo (em Reais) para cada suge
 
 ## 3. Arquitetura e Integração
 
-O módulo será integrado ao `paic-regula-api` e seguirá a arquitetura de microsserviços existente.
+O módulo será integrado ao `LIFE IA-api` e seguirá a arquitetura de microsserviços existente.
 
--   **Novo Arquivo**: `paic_regula/cost_forecasting.py` será criado para encapsular a lógica do modelo de previsão.
+-   **Novo Arquivo**: `life_ia/cost_forecasting.py` será criado para encapsular a lógica do modelo de previsão.
 -   **Modelo de ML**: Um modelo treinado (ex: `custo_internacao_v1.joblib`) será armazenado no diretório `models/`.
 -   **Integração**: O `main.py` será modificado para chamar o módulo de previsão de custo após a seleção dos hospitais. O custo estimado será adicionado à resposta da API.
 
 ```mermaid
 graph TD
-    A[API Request: /regulacao/solicitar] --> B{PAIC-Regula Core};
+    A[API Request: /regulacao/solicitar] --> B{LIFE IA Core};
     B --> C{Busca de Vagas};
     B --> D{Algoritmo de Compatibilidade};
     D --> E[Ranking de Hospitais];
@@ -101,7 +101,7 @@ A resposta do endpoint `/regulacao/solicitar` será enriquecida com a informaç�
 
 ## 8. Estimativa de Custo de Infraestrutura
 
-Esta seção apresenta uma estimativa de custo mensal para a infraestrutura necessária para rodar o sistema PAIC-Regula em um ambiente de produção de pequena escala. Os custos são aproximados e podem variar com o uso real e as configurações específicas.
+Esta seção apresenta uma estimativa de custo mensal para a infraestrutura necessária para rodar o sistema LIFE IA em um ambiente de produção de pequena escala. Os custos são aproximados e podem variar com o uso real e as configurações específicas.
 
 **Componentes da Infraestrutura:**
 -   **Servidor da API**: Máquina virtual para rodar a aplicação FastAPI (2 vCPUs, 4 GB RAM).
@@ -130,7 +130,7 @@ A tabela de custos acima considera uma abordagem tradicional baseada em máquina
 -   **Padrão de Mercado**: Utiliza uma tecnologia padrão da indústria, com uma vasta comunidade e ecossistema de ferramentas.
 
 **Arquitetura Cloud-Agnostic com Kubernetes:**
--   **Aplicação**: A API do PAIC-Regula seria empacotada em uma imagem de contêiner (Docker).
+-   **Aplicação**: A API do LIFE IA seria empacotada em uma imagem de contêiner (Docker).
 -   **Banco de Dados**: Em vez de usar um serviço gerenciado específico do provedor (como AWS RDS ou Google Cloud SQL), poderia-se usar um **operador de banco de dados** (ex: [Zalando Postgres Operator](https://github.com/zalando/postgres-operator)) que roda dentro do próprio cluster Kubernetes. Isso abstrai a complexidade do banco de dados e o torna portátil.
 -   **Implantação**: A implantação seria descrita em manifestos YAML do Kubernetes, que são agnósticos à nuvem.
 
@@ -143,7 +143,7 @@ Adotar o Kubernetes pode alterar a estrutura de custos. Embora os serviços gere
 -   **DigitalOcean** é uma opção simples e rápida para subir a aplicação, mas o custo do banco de dados gerenciado pode pesar.
 -   **Azure** é uma opção forte para empresas que já utilizam o ecossistema Microsoft, apesar do custo um pouco mais elevado.
 
-Para um projeto governamental focado no Brasil, como o PAIC-Regula, **Magalu Cloud** surge como uma opção estratégica e de baixo custo.
+Para um projeto governamental focado no Brasil, como o LIFE IA, **Magalu Cloud** surge como uma opção estratégica e de baixo custo.
 
 Aqui estão as tabelas convertidas para Markdown, baseadas nas imagens fornecidas.
 
@@ -208,13 +208,13 @@ Aqui estão as tabelas convertidas para Markdown, baseadas nas imagens fornecida
 
 Com base no arquivo `README.md` fornecido, percebo que houve uma mudança significativa de escopo: saímos da área de **Educação** para a área de **Saúde** (Regulação Hospitalar).
 
-Este projeto, **PAIC-Regula / Regulação Autônoma**, tem um perfil técnico muito forte (Python/FastAPI/Machine Learning) e atende perfeitamente ao requisito de **Inovação e Relevância Social** do edital, atacando um problema crítico (gestão de leitos do SUS).
+Este projeto, **LIFE IA / Regulação Autônoma**, tem um perfil técnico muito forte (Python/FastAPI/Machine Learning) e atende perfeitamente ao requisito de **Inovação e Relevância Social** do edital, atacando um problema crítico (gestão de leitos do SUS).
 
 Abaixo, refaço o **Planejamento Orçamentário** considerando as especificidades técnicas deste README (Stack Python, alta criticidade de saúde, e necessidade de integração com dados governamentais).
 
 ---
 
-# 🏥 Novo Orçamento: Projeto PAIC-Regula (Saúde)
+# 🏥 Novo Orçamento: Projeto LIFE IA (Saúde)
 
 **Valor do Prêmio (1º Lugar):** R$ 500.000,00
 **Foco:** Transformar o protótipo (MVP Local) em um Sistema de Produção para o Estado.
@@ -289,7 +289,7 @@ O foco do texto é demonstrar **Governança Técnica**: vocês não vão apenas 
 ### Proposta de Texto: Metodologia de Execução e Gestão
 
 **1. Abordagem de Desenvolvimento Ágil e Governança**
-A execução do projeto **PAIC-Regula** adotará metodologias ágeis (Scrum/Kanban) para garantir entregas incrementais e fiscalização contínua dos recursos investidos. [cite_start]A equipe proponente atuará como o **Núcleo Estratégico e Técnico**, enquanto os recursos do prêmio financiarão o **Braço Operacional** (empresas de desenvolvimento e infraestrutura), garantindo o cumprimento das vedações do edital quanto ao pagamento de pessoal interno[cite: 147, 148].
+A execução do projeto **LIFE IA** adotará metodologias ágeis (Scrum/Kanban) para garantir entregas incrementais e fiscalização contínua dos recursos investidos. [cite_start]A equipe proponente atuará como o **Núcleo Estratégico e Técnico**, enquanto os recursos do prêmio financiarão o **Braço Operacional** (empresas de desenvolvimento e infraestrutura), garantindo o cumprimento das vedações do edital quanto ao pagamento de pessoal interno[cite: 147, 148].
 
 **2. Estrutura de Gestão e Papéis (Núcleo Técnico)**
 A gestão dos fornecedores contratados será realizada diretamente pelos pesquisadores responsáveis, garantindo a fidelidade à arquitetura Open Source proposta:
@@ -387,7 +387,7 @@ As estimativas abaixo consideram um ambiente de produção com Load Balancer, 2 
 ## 3. Justificativa da Escolha Tecnológica
 
 ### Por que Magalu Cloud?
-1.  **Soberania e Custo (BRL):** Sendo um projeto governamental (PAIC-Regula), o uso de nuvem nacional elimina a volatilidade cambial do Dólar, facilitando a prestação de contas do orçamento público.
+1.  **Soberania e Custo (BRL):** Sendo um projeto governamental (LIFE IA), o uso de nuvem nacional elimina a volatilidade cambial do Dólar, facilitando a prestação de contas do orçamento público.
 2.  **Economia Real:** A diferença anual entre a Magalu Cloud (estimada) e a AWS pode chegar a mais de **R$ 15.000,00**, valor que será realocado para o desenvolvimento do modelo de IA.
 
 ### Por que Kubernetes?

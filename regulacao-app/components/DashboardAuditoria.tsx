@@ -1,5 +1,5 @@
 /**
- * DASHBOARD DE AUDITORIA PÚBLICA - PAIC-REGULA
+ * DASHBOARD DE AUDITORIA PÚBLICA - LIFE IA
  * 
  * Componente para visualização pública das decisões da IA
  * Atende ao critério de Transparência do edital FAPEG
@@ -235,7 +235,7 @@ const DashboardAuditoria: React.FC = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitulo}>Dashboard de Auditoria</Text>
         <Text style={styles.headerSubtitulo}>
-          Transparencia das Decisoes da IA - PAIC-Regula
+          Transparencia das Decisoes da IA - LIFE IA
         </Text>
         <View style={styles.badgeContainer}>
           <View style={styles.badge}>
@@ -394,7 +394,7 @@ const DashboardAuditoria: React.FC = () => {
               Última atualização: {new Date(dados.periodo.gerado_em).toLocaleString('pt-BR')}
             </Text>
             <Text style={styles.rodapeTexto}>
-              Sistema PAIC-Regula - IA 100% Aberta e Auditável
+              Sistema LIFE IA - IA 100% Aberta e Auditável
             </Text>
           </View>
         </>

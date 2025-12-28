@@ -1,11 +1,11 @@
-PRÊMIO GOIÁS ABERTO PARA A INTELIGÊNCIA ARTIFICIAL – GO.IA  
+﻿PRÊMIO GOIÁS ABERTO PARA A INTELIGÊNCIA ARTIFICIAL – GO.IA  
 1 – Proponente  
 Lívia Moreira Rocha \- Cirurgiã-Dentista, autonoma, empreendedora, com atuação em Saúde Pública e Desenvolvedora Junior
 
 2 – IES / Empresa / Startup / ICTI  
 Nine Health  
 3 – Título do Projeto  
-**PAIC-Regula \-** Regulação Autônoma para a Automatização de Leitos de Hospitais Estaduais do Sistema Único de Saúde \- Goiás por via IA Aberta.
+**LIFE IA - Regulação Autônoma** – Sistema Inteligente para a Automatização de Leitos de Hospitais Estaduais do Sistema Único de Saúde - Goiás por via IA Aberta.
 
 **4 – Descreva a solução inovadora e o problema a ser resolvido** 
 
@@ -18,7 +18,7 @@ Um deles consiste no fato de que os serviços hospitalares com unidades de Urgê
 A falta de interoperabilidade (**ROTZSCH, 2024**) entre diferentes sistemas de saúde é um obstáculo significativo para a adoção em larga escala da Saúde Digital. Sistemas eletrônicos de prontuário do paciente, plataformas de telessaúde e aplicativos de saúde muitas vezes não se comunicam entre si (**ROTZSCH, 2024**) , o que fragmenta o atendimento ao paciente, dificulta o acesso ao histórico médico completo e impede o compartilhamento eficiente de informações entre profissionais de saúde.  
 A STARTUP **Regulação Autonoma** é uma proposta de utilização da IA para condicionar a Regulação Autônoma dentro dos gerenciamentos de atendimentos em saúde.
 
-O **PAIC-Regula** é uma solução prevista a ser implantada com a finalidade de atender diferentes especialidades, desde a regulação de leitos à regulação de cirurgias eletivas.
+O **LIFE IA - Regulação Autônoma** é uma solução prevista a ser implantada com a finalidade de atender diferentes especialidades, desde a regulação de leitos à regulação de cirurgias eletivas.
 
  A proposta é criar uma integração entre as redes municipais e o Estado, através da IA do processamento de linguagem natural. Esta IA, do inglês, natural language processing \[NLP\]) é uma tecnologia para comunicação natural entre computadores e pessoas. 
 
@@ -26,17 +26,17 @@ Para esta proposta, é preconizada a análise prontuários, os quais fornecem su
 
 Um formulário preenchido pelo Hospital Solicitante, com dados do paciente é enviado a Regulação, a Inteligência vai analisar os dados enviados e prontuário para fazer a gestão de fila de acordo com a Gravidade, Comorbidades e qual especialidade se adequa a solicitação. Com a diminuição de espera para essa transferência, teremos mais fluxo de vagas na Atenção Básica, fazendo com que isso a população não procure algum hospital de grande complexidade, quando um cronograma de calendário que este está “Porta Aberta”.
 
-Neste contexto, propõe-se a geração da STARTUP **PAIC-Regula** para “Regulação Autônoma” que priorize suprir as deficiências geradas pelos sistemas manuais. 
+Neste contexto, propõe-se a geração da STARTUP **LIFE IA** para “Regulação Autônoma” que priorize suprir as deficiências geradas pelos sistemas manuais. 
 
 ou  
-**PAIC-Regula \-** Regulação Autônoma para a Automatização de Leitos de Hospitais Estaduais do Sistema Único de Saúde \- Goiás por via IA Aberta.
+**LIFE IA - Regulação Autônoma** – Sistema Inteligente para a Automatização de Leitos de Hospitais Estaduais do Sistema Único de Saúde - Goiás por via IA Aberta.
 
-O **PAIC-Regula deve ser** um sistema que não apenas auxilia, mas **automatiza a triagem e o pareamento ideal** do paciente, integrando-se ao fluxo de trabalho de regulação existente:
+O **LIFE IA** deve ser um sistema que não apenas auxilia, mas **automatiza a triagem e o pareamento ideal** do paciente, integrando-se ao fluxo de trabalho de regulação existente:
 
 1) **Regulação Autônoma (IA):** A IA assume a função logística de triagem, analisando o *upload* de documentos/dados e conduzindo qual o **melhor hospital \-** maior Desfecho Positivo, deve receber o paciente.   
 2) **Transparência e Logística em Tempo Real:** A IA fornece em tempo real a **Previsão de Vaga**, o **Tempo de Regulação** e o **Tempo de Transferência** (utilizando APIs de mapas), injetando inteligência preditiva nos dados já existentes.  
 3) **Melhoria do Processo de Entrada:** O sistema otimiza a entrada de dados, documentos e informações clínicas, para a Regulação, garantindo a qualidade da informação que alimenta a IA.  
-4) **Pilotagem (*Shadow Mode*).** Ao final do gerenciamento eletrônico, o paciente será aceito no leito por decisão da equipe clínica-hospitalar conforme a sua disponibilidade médica e as condições estruturais e sanitárias do hospital selecionado. Conforme o PAIC-Regula, a IA estabelece o encaminhamento, porem, sem tirar a autonomia interna do hospital em acatar ou não, as inidações da IA.
+4) **Pilotagem (*Shadow Mode*).** Ao final do gerenciamento eletrônico, o paciente será aceito no leito por decisão da equipe clínica-hospitalar conforme a sua disponibilidade médica e as condições estruturais e sanitárias do hospital selecionado. Conforme o LIFE IA, a IA estabelece o encaminhamento, porem, sem tirar a autonomia interna do hospital em acatar ou não, as indicações da IA.
 
 5 – Escreva o impacto social, econômico e/ou ambiental esperado (critério “b”, item 9.4). 
 
@@ -84,6 +84,128 @@ O projeto garante a **reprodutibilidade total** e busca a pontuação máxima ne
 * **Metodologia Empregada:** **Aprendizado de Maquina supervisionado, baseado em dados capaz de prever exemplos futuros. Coleta de dados, pre-processamento, criação de modelo e pós-processamento..**  
 * **Ciclo de Aprendizado Contínuo**. Este ciclo estará utilizando um *pipeline* de *deployment* e **retreinamento automatizado** (via Apache Airflow/Kubernetes) o qual garante que o modelo seja aprimorado continuamente com os novos dados de desfechos clínicos, mantendo a precisão ao longo do tempo.
 
+### 9.1 – Arquitetura Técnica de Inteligência Artificial
+
+O LIFE IA utiliza um **pipeline multimodal de IA** que combina três tecnologias complementares para análise de documentos médicos:
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Documento     │───▶│      OCR        │───▶│    BioBERT      │───▶│    Llama 3      │
+│   (Imagem/PDF)  │    │  (Tesseract)    │    │  (Entidades)    │    │   (Contexto)    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+                              30%                    60%                    10%
+                         (Extração)            (Análise Principal)     (Complemento)
+```
+
+#### Modelo Principal: BioBERT v1.1
+
+| Atributo | Especificação |
+|----------|---------------|
+| **Nome do Modelo** | dmis-lab/biobert-base-cased-v1.1 |
+| **Licença** | Apache 2.0 (Open Source) |
+| **Repositório** | https://huggingface.co/dmis-lab/biobert-base-cased-v1.1 |
+| **Dados de Treinamento** | PubMed Abstracts (4.5 bilhões de palavras, 1966-2019) + PMC Full-text (13.5 bilhões de palavras) |
+| **Vocabulário** | 28.996 tokens WordPiece especializados em terminologia médica |
+| **Referência Científica** | Lee, J. et al. (2020). BioBERT: a pre-trained biomedical language representation model. *Bioinformatics*, 36(4), 1234-1240. DOI: 10.1093/bioinformatics/btz682 |
+
+**Por que BioBERT?**
+O BioBERT foi escolhido por ser o modelo de NLP biomédico mais validado cientificamente, com treinamento específico em literatura médica (PubMed/PMC). Diferente de modelos genéricos, o BioBERT compreende terminologia clínica, CIDs, medicamentos e procedimentos médicos com alta precisão.
+
+#### Modelo Complementar: Llama 3
+
+| Atributo | Especificação |
+|----------|---------------|
+| **Nome do Modelo** | Llama 3 (8B parâmetros) |
+| **Licença** | Meta Llama License |
+| **Execução** | Local via Ollama (sem envio de dados para cloud) |
+| **Função** | Interpretação contextual e geração de resumos clínicos |
+
+#### OCR: Tesseract
+
+| Atributo | Especificação |
+|----------|---------------|
+| **Engine** | Tesseract OCR 5.x |
+| **Licença** | Apache 2.0 |
+| **Idiomas** | Português + Inglês |
+| **Função** | Extração de texto de imagens de prontuários, receitas e exames |
+
+#### Cálculo de Confiança
+
+A confiança final da análise é calculada pela fórmula:
+
+```
+Confiança = (BioBERT × 0.60) + (OCR × 0.30) + (Llama × 0.10)
+```
+
+| Componente | Peso | Justificativa |
+|------------|------|---------------|
+| **BioBERT** | 60% | Modelo principal, validado cientificamente para textos biomédicos |
+| **OCR** | 30% | Qualidade da extração de texto impacta toda a análise |
+| **Llama** | 10% | Complemento para interpretação contextual |
+
+#### Fallbacks de Segurança
+
+O sistema implementa fallbacks automáticos para garantir disponibilidade:
+
+1. **BioBERT indisponível** → Bio_ClinicalBERT (MIT License, treinado em MIMIC-III)
+2. **Bio_ClinicalBERT indisponível** → BERT Base (Apache 2.0)
+3. **OCR Tesseract indisponível** → EasyOCR (Apache 2.0)
+
+### 9.2 – Pipeline de Seleção de Hospitais (3 Peneiras)
+
+O algoritmo de matchmaking utiliza um sistema de **três peneiras** para selecionar o hospital mais adequado:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PACIENTE EM REGULAÇÃO                        │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  PENEIRA 1: ESPECIALIDADE                                       │
+│  Filtra hospitais que possuem a especialidade necessária        │
+│  Ex: Cardiologia, Neurologia, Trauma, UTI                       │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  PENEIRA 2: COMPLEXIDADE (CID)                                  │
+│  Baseado no CID do paciente, prioriza hospitais com             │
+│  capacidade técnica adequada (alta/média/baixa complexidade)    │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  PENEIRA 3: LOCALIDADE                                          │
+│  Prioriza hospitais regionais quando adequados                  │
+│  Considera tempo de transferência (API de mapas)                │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    HOSPITAL SELECIONADO                         │
+│  + Score de confiança + Tempo estimado de transferência         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 9.3 – Entidades Médicas Detectadas pelo BioBERT
+
+O BioBERT é treinado para identificar as seguintes categorias de entidades:
+
+| Categoria | Exemplos | Impacto na Gravidade |
+|-----------|----------|---------------------|
+| **Sintomas** | dor, febre, dispneia, cefaleia, náusea, taquicardia | +1 a +2 |
+| **Condições Urgentes** | trauma, infarto, AVC, pneumonia | +3 a +4 |
+| **Anatomia** | tórax, abdômen, crânio, extremidades | Contextual |
+| **Exames** | raio-x, tomografia, ressonância, ECG | Contextual |
+
+**Classificação de Gravidade:**
+- **Crítica** (score ≥ 8): Encaminhamento imediato
+- **Alta** (score 5-7): Prioridade na fila
+- **Moderada** (score 3-4): Regulação padrão
+- **Baixa** (score < 3): Pode aguardar
+
+
 10 – Comprovação de Participação de ICTI em Goiás (Critério “g” – Participação de ICTI) 20
 
 * **ICTI Participante:** **Pontifícia Universidade Católica de Goiás (PUC Goiás)** – Pró-Reitoria de Pesquisa e Inovação. 21  
@@ -101,7 +223,7 @@ O projeto garante a **reprodutibilidade total** e busca a pontuação máxima ne
 
 12 – Plano de Aplicação dos Recursos Pós-Premiação (Exemplo para R$ 390.000,00) 22222222
 
-| Categoria FAPEG (Item 6.1) | Foco no PAIC-Regula | Valor Estimado (R$) |
+| Categoria FAPEG (Item 6.1) | Foco no LIFE IA | Valor Estimado (R$) |
 | :---- | :---- | :---- |
 | **Infraestrutura Tecnológica** | Custos de Serviços de Cloud (GPU para Treinamento e Sustentação de K8s/PostgreSQL por 12 meses). | R$ 150.000,00 |
 | **Serviços de Terceiros e Consultoria Técnica** | Contratação de Engenheiro de Dados (PJ) para *pipeline* ETL. Custo de **APIs de Terceiros** (Ex: SMS/Mapas) e Auditoria de Ética/LGPD externa. | R$ 170.000,00 |
@@ -118,6 +240,8 @@ O projeto garante a **reprodutibilidade total** e busca a pontuação máxima ne
 
 REFERÊNCIAS BIBLIOGRÁFICAS 📚  
 A seguir, a lista das referências citadas, extraídas dos documentos anexados:
+
+**LEE, Jinhyuk** et al. BioBERT: a pre-trained biomedical language representation model for biomedical text mining. *Bioinformatics*, Oxford, v. 36, n. 4, p. 1234-1240, fev. 2020. DOI: 10.1093/bioinformatics/btz682. Disponível em: \<https://academic.oup.com/bioinformatics/article/36/4/1234/5566506\>. Acesso em: 21 dez. 2025.
 
 * **Carvalho, S. T. de**; Kudo, T. N.; Souza-Zinader, J. P. de; Braga, R. D.; Pedrosa, S. M.; Galvão Filho, A. R. (Org.). **Transformação Digital na Saúde**. \[S.l.\]: AKCIT, UFG, 2024\.  
 * **Ferré, F.**; Braga, R. D.; Souza-Zinader, J. P. de; Kudo, T. N.; Pedrosa, S. M.; Galvão Filho, A. R. (Org.). **Gestão de Dados de Saúde**. \[S.l.\]: AKCIT, UFG, 2024\.  

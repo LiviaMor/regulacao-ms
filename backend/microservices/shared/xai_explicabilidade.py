@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-XAI - EXPLICABILIDADE DA IA - SISTEMA PAIC-REGULA
+XAI - EXPLICABILIDADE DA IA - SISTEMA LIFE IA
 Módulo de Explicabilidade (Explainable AI) para transparência das decisões
 
 Este módulo implementa explicações detalhadas de por que a IA escolheu
@@ -297,7 +297,7 @@ class ExplicadorDecisaoIA:
         fator_principal = explicacao_fatores[0] if explicacao_fatores else None
         
         texto = f"""
-EXPLICAÇÃO DA DECISÃO DA IA - PAIC-REGULA
+EXPLICAÇÃO DA DECISÃO DA IA - LIFE IA
 
 📋 PACIENTE: Protocolo {dados_paciente.get('protocolo', 'N/A')}
    • CID: {cid} - {explicacao_cid.get('explicacao', 'Análise padrão')}
@@ -403,3 +403,4 @@ if __name__ == "__main__":
     print(explicacao["explicacao_resumida"])
     print("\n" + "=" * 60)
     print("✅ Módulo XAI funcionando corretamente!")
+

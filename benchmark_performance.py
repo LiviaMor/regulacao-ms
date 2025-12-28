@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-BENCHMARK DE PERFORMANCE - PAIC-REGULA
+BENCHMARK DE PERFORMANCE - LIFE IA
 Script para medir e documentar a performance do sistema
 
 Este script gera métricas de benchmark para demonstrar a viabilidade
@@ -265,7 +265,7 @@ def gerar_relatorio(resultados: Dict[str, Any]) -> str:
     
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    relatorio = f"""# 📊 RELATÓRIO DE BENCHMARK - PAIC-REGULA
+    relatorio = f"""# 📊 RELATÓRIO DE BENCHMARK - LIFE IA
 
 **Data**: {timestamp}  
 **Ambiente**: {API_BASE_URL}  
@@ -317,7 +317,7 @@ def gerar_relatorio(resultados: Dict[str, Any]) -> str:
 
 ## 4. Conclusão
 
-O sistema PAIC-Regula demonstra **performance adequada para produção**:
+O sistema LIFE IA demonstra **performance adequada para produção**:
 
 - ✅ Tempo de resposta da IA abaixo de 500ms (média)
 - ✅ Taxa de sucesso acima de 95%
@@ -335,7 +335,7 @@ O sistema PAIC-Regula demonstra **performance adequada para produção**:
 
 
 def main():
-    print_header("BENCHMARK DE PERFORMANCE - PAIC-REGULA")
+    print_header("BENCHMARK DE PERFORMANCE - LIFE IA")
     print(f"🌐 API: {API_BASE_URL}")
     print(f"📅 Data: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
@@ -436,3 +436,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
