@@ -33,6 +33,7 @@ interface PacienteRegulacao {
   especialidade: string;
   cidade_origem: string;
   unidade_solicitante: string;
+  hospital_origem: string;
   score_prioridade: number;
   classificacao_risco: 'VERMELHO' | 'AMARELO' | 'VERDE';
   justificativa_tecnica: string;
@@ -73,6 +74,7 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
           especialidade: p.especialidade,
           cidade_origem: p.cidade_origem || 'N/A',
           unidade_solicitante: p.unidade_solicitante || 'Hospital Solicitante',
+          hospital_origem: p.hospital_origem || p.unidade_solicitante || 'N/A',
           score_prioridade: p.score_prioridade,
           classificacao_risco: p.classificacao_risco,
           justificativa_tecnica: p.justificativa_tecnica,
@@ -203,13 +205,13 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
         <Text style={styles.infoLabel}>Especialidade:</Text>
         <Text style={styles.infoValue}>{item.especialidade}</Text>
         
-        <Text style={styles.infoLabel}>Origem:</Text>
-        <Text style={styles.infoValue}>{item.cidade_origem}</Text>
-        
-        <Text style={styles.infoLabel}>Unidade Solicitante:</Text>
+        <Text style={styles.infoLabel}>Hospital de Origem:</Text>
         <Text style={styles.infoValue} numberOfLines={2}>
-          {item.unidade_solicitante}
+          {item.hospital_origem}
         </Text>
+        
+        <Text style={styles.infoLabel}>Cidade:</Text>
+        <Text style={styles.infoValue}>{item.cidade_origem}</Text>
         
         <Text style={styles.infoLabel}>Solicitação:</Text>
         <Text style={styles.infoValue}>{formatDate(item.data_solicitacao)}</Text>

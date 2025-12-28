@@ -91,10 +91,20 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     marginRight: Spacing.md,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    // Sombra sutil para destacar
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: 120,
+    height: 39,  // Proporção 3.11:1 da logo original
   },
   titleContainer: {
     flex: 1,

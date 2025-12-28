@@ -6,13 +6,12 @@
  * Carrossel animado para hospitais de grande complexidade
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  Animated,
   Dimensions,
 } from 'react-native';
 import { 
@@ -48,9 +47,7 @@ const OcupacaoHospitais: React.FC<OcupacaoHospitaisProps> = ({
   ocupacao_hospitais, 
   resumo_ocupacao 
 }) => {
-  const scrollX = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
-  const [contentWidth, setContentWidth] = useState(0);
   
   const hospitaisTendenciaAlta = ocupacao_hospitais.filter(h => h.tendencia === 'ALTA').length;
   const hospitaisTendenciaQueda = ocupacao_hospitais.filter(h => h.tendencia === 'QUEDA').length;
@@ -62,17 +59,11 @@ const OcupacaoHospitais: React.FC<OcupacaoHospitaisProps> = ({
     (h.sigla && ['HUGO', 'HUGOL', 'HGG', 'HEMU', 'HECAD'].includes(h.sigla))
   );
 
-  const hospitaisRegionais = ocupacao_hospitais.filter(h => 
-    h.tipo === 'Regional' || 
-    (h.sigla && !['HUGO', 'HUGOL', 'HGG', 'HEMU', 'HECAD'].includes(h.sigla))
-  );
-
   // Animacao do carrossel - scroll automatico da direita para esquerda
   useEffect(() => {
     if (hospitaisGrandeComplexidade.length <= 1) return;
 
     const totalWidth = hospitaisGrandeComplexidade.length * (CARD_WIDTH + CARD_MARGIN);
-    setContentWidth(totalWidth);
 
     let scrollPosition = 0;
     const interval = setInterval(() => {
@@ -194,24 +185,6 @@ const OcupacaoHospitais: React.FC<OcupacaoHospitaisProps> = ({
           >
             {hospitaisGrandeComplexidade.map((hospital, index) => (
               <View key={`grande-${index}`} style={styles.cardWrapper}>
-                <HospitalCard hospital={hospital} compact />
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Lista de Hospitais Regionais */}
-      {hospitaisRegionais.length > 0 && (
-        <View style={styles.regionaisSection}>
-          <Text style={styles.regionaisTitle}>Hospitais Regionais</Text>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.hospitaisContainer}
-          >
-            {hospitaisRegionais.map((hospital, index) => (
-              <View key={`regional-${index}`} style={styles.cardWrapper}>
                 <HospitalCard hospital={hospital} compact />
               </View>
             ))}
@@ -359,18 +332,6 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 10,
     fontWeight: 'bold',
-  },
-  
-  // Regionais
-  regionaisSection: {
-    marginTop: Spacing.lg,
-  },
-  regionaisTitle: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.semiBold,
-    color: Colors.textPrimary,
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
   },
   
   hospitaisContainer: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
