@@ -536,6 +536,8 @@ class PacienteInput(BaseModel):
     nome_mae: Optional[str] = None
     cpf: Optional[str] = None
     telefone_contato: Optional[str] = None
+    # Hospital de origem - para calculo de distancia
+    hospital_origem: Optional[str] = None
     # Dados clínicos
     solicitacao: Optional[str] = None
     especialidade: Optional[str] = None
@@ -556,13 +558,13 @@ class StatusUpdate(BaseModel):
     novo_status: str
     observacoes: Optional[str] = None
 
-# Dados simulados para desenvolvimento
+# Dados simulados para desenvolvimento (usando status padronizados)
 DADOS_SIMULADOS = {
     "status_summary": [
-        {"status": "EM_REGULACAO", "count": 45},
-        {"status": "INTERNACAO_AUTORIZADA", "count": 12},
-        {"status": "INTERNADA", "count": 234},
-        {"status": "COM_ALTA", "count": 89}
+        {"status": "AGUARDANDO_REGULACAO", "count": 45},
+        {"status": "EM_TRANSFERENCIA", "count": 12},
+        {"status": "ADMITIDO", "count": 234},
+        {"status": "ALTA", "count": 89}
     ],
     "unidades_pressao": [
         {
@@ -1193,20 +1195,20 @@ async def consultar_paciente(
         if not paciente:
             return {"encontrado": False}
         
-        # Calcular posição na fila (se em regulação)
+        # Calcular posição na fila (se aguardando regulação)
         posicao_fila = None
         total_fila = None
         
-        if paciente.status == 'EM_REGULACAO':
+        if paciente.status == 'AGUARDANDO_REGULACAO':
             # Contar pacientes com prioridade maior ou igual
             pacientes_prioritarios = db.query(PacienteRegulacao).filter(
-                PacienteRegulacao.status == 'EM_REGULACAO',
+                PacienteRegulacao.status == 'AGUARDANDO_REGULACAO',
                 PacienteRegulacao.especialidade == paciente.especialidade,
                 PacienteRegulacao.score_prioridade >= (paciente.score_prioridade or 5)
             ).count()
             
             total_na_especialidade = db.query(PacienteRegulacao).filter(
-                PacienteRegulacao.status == 'EM_REGULACAO',
+                PacienteRegulacao.status == 'AGUARDANDO_REGULACAO',
                 PacienteRegulacao.especialidade == paciente.especialidade
             ).count()
             
@@ -1225,7 +1227,7 @@ async def consultar_paciente(
         historico_movimentacoes.append({
             "data": paciente.data_solicitacao.isoformat() if paciente.data_solicitacao else datetime.utcnow().isoformat(),
             "status_anterior": "SOLICITADO",
-            "status_novo": "EM_REGULACAO",
+            "status_novo": "AGUARDANDO_REGULACAO",
             "observacoes": "Solicitação de regulação recebida",
             "responsavel": "Sistema Automático"
         })
@@ -1236,7 +1238,7 @@ async def consultar_paciente(
                 decisao_data = json.loads(decisao.decisao_ia)
                 historico_movimentacoes.append({
                     "data": decisao.created_at.isoformat(),
-                    "status_anterior": "EM_REGULACAO",
+                    "status_anterior": "AGUARDANDO_REGULACAO",
                     "status_novo": "ANALISADO_IA",
                     "observacoes": f"Análise da IA: {decisao_data.get('analise_decisoria', {}).get('justificativa_clinica', 'Processado')}",
                     "responsavel": "Sistema de IA"
@@ -1248,7 +1250,7 @@ async def consultar_paciente(
         if paciente.status == 'EM_TRANSFERENCIA':
             historico_movimentacoes.append({
                 "data": paciente.updated_at.isoformat() if paciente.updated_at else datetime.utcnow().isoformat(),
-                "status_anterior": "EM_REGULACAO",
+                "status_anterior": "AGUARDANDO_REGULACAO",
                 "status_novo": "EM_TRANSFERENCIA",
                 "observacoes": f"Transferência autorizada para {paciente.unidade_destino}",
                 "responsavel": "Regulador Médico"
@@ -1259,7 +1261,7 @@ async def consultar_paciente(
         
         # Calcular previsão de atendimento
         previsao_atendimento = None
-        if paciente.status == 'EM_REGULACAO' and posicao_fila:
+        if paciente.status == 'AGUARDANDO_REGULACAO' and posicao_fila:
             if posicao_fila <= 5:
                 previsao_atendimento = "Próximas 2-4 horas"
             elif posicao_fila <= 15:
@@ -1338,8 +1340,8 @@ async def relatorio_auditoria(
             if p.cidade_origem:
                 por_cidade[p.cidade_origem] = por_cidade.get(p.cidade_origem, 0) + 1
             
-            # Calcular tempo de regulação
-            if p.data_solicitacao and p.updated_at and p.status != 'EM_REGULACAO':
+            # Calcular tempo de regulação (apenas para pacientes que já foram processados)
+            if p.data_solicitacao and p.updated_at and p.status != 'AGUARDANDO_REGULACAO':
                 tempo = (p.updated_at - p.data_solicitacao).total_seconds() / 3600  # horas
                 tempos_regulacao.append(tempo)
         
@@ -1823,10 +1825,10 @@ async def metricas_impacto(db: Session = Depends(get_db)):
     try:
         # Buscar estatísticas do banco
         total_pacientes = db.query(PacienteRegulacao).count()
-        em_regulacao = db.query(PacienteRegulacao).filter(
-            PacienteRegulacao.status == 'EM_REGULACAO'
+        aguardando_regulacao = db.query(PacienteRegulacao).filter(
+            PacienteRegulacao.status == 'AGUARDANDO_REGULACAO'
         ).count()
-        autorizados = db.query(PacienteRegulacao).filter(
+        em_transferencia = db.query(PacienteRegulacao).filter(
             PacienteRegulacao.status == 'EM_TRANSFERENCIA'
         ).count()
         
@@ -1840,8 +1842,8 @@ async def metricas_impacto(db: Session = Depends(get_db)):
         return {
             "metricas_operacionais": {
                 "total_pacientes_processados": total_pacientes,
-                "pacientes_em_regulacao": em_regulacao,
-                "internacoes_autorizadas": autorizados,
+                "pacientes_aguardando_regulacao": aguardando_regulacao,
+                "pacientes_em_transferencia": em_transferencia,
                 "total_decisoes_ia": total_decisoes_ia
             },
             "metricas_performance_ia": {
@@ -1901,7 +1903,16 @@ async def listar_pacientes_hospital_aguardando(db: Session = Depends(get_db)):
                 "unidade_destino": paciente.unidade_destino,
                 "historico_paciente": paciente.historico_paciente,
                 "prioridade_descricao": paciente.prioridade_descricao,
-                "justificativa_negacao": getattr(paciente, 'justificativa_negacao', None)
+                "justificativa_negacao": getattr(paciente, 'justificativa_negacao', None),
+                # Dados completos para edição de pacientes negados
+                "nome_completo": paciente.nome_completo,
+                "nome_mae": paciente.nome_mae,
+                "cpf": paciente.cpf,
+                "telefone_contato": paciente.telefone_contato,
+                "prontuario_texto": paciente.prontuario_texto,
+                "cidade_origem": paciente.cidade_origem,
+                "unidade_solicitante": paciente.unidade_solicitante,
+                "hospital_origem": getattr(paciente, 'hospital_origem', None)
             })
         
         logger.info(f"Retornando {len(resultado)} pacientes aguardando regulação ou negados")
@@ -1909,7 +1920,9 @@ async def listar_pacientes_hospital_aguardando(db: Session = Depends(get_db)):
         
     except Exception as e:
         logger.error(f"Erro ao buscar pacientes aguardando: {e}")
-        raise HTTPException(status_code=500, detail="Erro interno do servidor")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Erro interno do servidor: {str(e)}")
 
 class PacienteHospitalRequest(BaseModel):
     paciente: PacienteInput
@@ -1937,6 +1950,7 @@ async def salvar_paciente_hospital(
             paciente_existente.nome_mae = paciente.nome_mae
             paciente_existente.cpf = paciente.cpf
             paciente_existente.telefone_contato = paciente.telefone_contato
+            paciente_existente.hospital_origem = getattr(paciente, 'hospital_origem', None)
             paciente_existente.especialidade = paciente.especialidade
             paciente_existente.cid = paciente.cid
             paciente_existente.cid_desc = paciente.cid_desc
@@ -1964,6 +1978,7 @@ async def salvar_paciente_hospital(
                 nome_mae=paciente.nome_mae,
                 cpf=paciente.cpf,
                 telefone_contato=paciente.telefone_contato,
+                hospital_origem=getattr(paciente, 'hospital_origem', None),
                 data_solicitacao=datetime.utcnow(),
                 status='AGUARDANDO_REGULACAO',
                 especialidade=paciente.especialidade,
@@ -1995,6 +2010,257 @@ async def salvar_paciente_hospital(
     except Exception as e:
         logger.error(f"Erro ao salvar paciente: {e}")
         raise HTTPException(status_code=500, detail="Erro interno do servidor")
+
+
+# ============================================================================
+# UPLOAD E ANÁLISE DE DOCUMENTOS MÉDICOS COM IA
+# Pipeline: OCR → BioBERT → Llama 3
+# ============================================================================
+
+@app.post("/upload-documento-medico/{protocolo}")
+async def upload_documento_medico(
+    protocolo: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload e análise de documento médico com pipeline de IA
+    
+    Pipeline de processamento:
+    1. OCR (Tesseract/EasyOCR) - Extração de texto
+    2. BioBERT - Análise de entidades médicas
+    3. Llama 3 - Interpretação contextual
+    
+    Tipos suportados: JPG, PNG, WEBP, PDF
+    Tamanho máximo: 10MB
+    """
+    
+    try:
+        # Validar tipo de arquivo
+        extensao = file.filename.split('.')[-1].lower() if file.filename else ''
+        tipos_permitidos = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'pdf']
+        
+        if extensao not in tipos_permitidos:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Tipo de arquivo não suportado. Permitidos: {', '.join(tipos_permitidos)}"
+            )
+        
+        # Ler conteúdo do arquivo
+        conteudo = await file.read()
+        tamanho = len(conteudo)
+        
+        # Validar tamanho (máximo 10MB)
+        if tamanho > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Arquivo muito grande. Máximo: 10MB")
+        
+        # Buscar paciente
+        paciente = db.query(PacienteRegulacao).filter(
+            PacienteRegulacao.protocolo == protocolo
+        ).first()
+        
+        if not paciente:
+            raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        
+        logger.info(f"📄 Processando documento para {protocolo}: {file.filename} ({tamanho} bytes)")
+        
+        # === PROCESSAR COM PIPELINE DE IA ===
+        try:
+            sys.path.append('microservices/shared')
+            from document_ai_service import processar_documento_medico
+            
+            # Contexto do paciente para análise
+            contexto = f"Paciente: {paciente.especialidade or 'N/A'}, CID: {paciente.cid or 'N/A'}"
+            if paciente.prontuario_texto:
+                contexto += f", Quadro: {paciente.prontuario_texto[:200]}"
+            
+            # Processar documento
+            resultado_ia = processar_documento_medico(
+                image_data=conteudo,
+                filename=file.filename,
+                contexto_paciente=contexto
+            )
+            
+            logger.info(f"✅ Documento processado: confiança {resultado_ia.get('confianca_geral', 0)}")
+            
+        except ImportError as e:
+            logger.warning(f"⚠️ Document AI Service não disponível: {e}")
+            resultado_ia = {
+                "status": "servico_indisponivel",
+                "resumo_ia": "Serviço de análise de documentos não disponível",
+                "confianca_geral": 0.0
+            }
+        except Exception as e:
+            logger.error(f"❌ Erro no processamento IA: {e}")
+            resultado_ia = {
+                "status": "erro",
+                "resumo_ia": f"Erro no processamento: {str(e)}",
+                "confianca_geral": 0.0
+            }
+        
+        # === SALVAR NO BANCO DE DADOS ===
+        # Converter para base64 para armazenamento
+        conteudo_base64 = base64.b64encode(conteudo).decode('utf-8')
+        
+        # Atualizar paciente com dados do anexo
+        paciente.anexo_filename = file.filename
+        paciente.anexo_tipo = file.content_type or f"image/{extensao}"
+        paciente.anexo_tamanho = tamanho
+        paciente.anexo_base64 = conteudo_base64 if tamanho < 5 * 1024 * 1024 else None  # Base64 só para < 5MB
+        paciente.anexo_texto_ocr = resultado_ia.get("etapas", {}).get("ocr", {}).get("texto_extraido", "")
+        paciente.anexo_analise_biobert = json.dumps(resultado_ia.get("etapas", {}).get("biobert", {}))
+        paciente.anexo_analise_llama = resultado_ia.get("resumo_ia", "")
+        paciente.anexo_confianca_ia = resultado_ia.get("confianca_geral", 0.0)
+        paciente.anexo_alertas = json.dumps(resultado_ia.get("alertas", []))
+        paciente.anexo_processado_em = datetime.utcnow()
+        paciente.updated_at = datetime.utcnow()
+        
+        # Se houver texto extraído, adicionar ao prontuário
+        texto_ocr = resultado_ia.get("etapas", {}).get("ocr", {}).get("texto_extraido", "")
+        if texto_ocr and len(texto_ocr) > 20:
+            if paciente.prontuario_texto:
+                paciente.prontuario_texto += f"\n\n[DOCUMENTO ANEXADO - {file.filename}]\n{texto_ocr}"
+            else:
+                paciente.prontuario_texto = f"[DOCUMENTO ANEXADO - {file.filename}]\n{texto_ocr}"
+        
+        db.commit()
+        
+        return {
+            "status": "sucesso",
+            "protocolo": protocolo,
+            "arquivo": {
+                "nome": file.filename,
+                "tipo": file.content_type,
+                "tamanho_bytes": tamanho
+            },
+            "analise_ia": {
+                "status": resultado_ia.get("status"),
+                "confianca_geral": resultado_ia.get("confianca_geral", 0.0),
+                "texto_extraido": texto_ocr[:500] if texto_ocr else None,
+                "resumo_llama": resultado_ia.get("resumo_ia", "")[:1000] if resultado_ia.get("resumo_ia") else None,
+                "entidades_detectadas": len(resultado_ia.get("entidades_detectadas", [])),
+                "alertas": resultado_ia.get("alertas", []),
+                "tempo_processamento": resultado_ia.get("tempo_total_segundos", 0)
+            },
+            "mensagem": "Documento processado e anexado ao paciente com sucesso"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erro no upload de documento: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Erro ao processar documento: {str(e)}")
+
+
+@app.post("/analisar-documento-ia")
+async def analisar_documento_ia(file: UploadFile = File(...)):
+    """
+    Análise de documento médico com IA (sem salvar no banco)
+    Útil para preview antes de associar a um paciente
+    
+    Retorna análise completa: OCR + BioBERT + Llama
+    """
+    
+    try:
+        # Validar tipo de arquivo
+        extensao = file.filename.split('.')[-1].lower() if file.filename else ''
+        tipos_permitidos = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'pdf']
+        
+        if extensao not in tipos_permitidos:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Tipo de arquivo não suportado. Permitidos: {', '.join(tipos_permitidos)}"
+            )
+        
+        # Ler conteúdo
+        conteudo = await file.read()
+        tamanho = len(conteudo)
+        
+        if tamanho > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Arquivo muito grande. Máximo: 10MB")
+        
+        logger.info(f"📄 Analisando documento: {file.filename} ({tamanho} bytes)")
+        
+        # Processar com IA
+        try:
+            sys.path.append('microservices/shared')
+            from document_ai_service import processar_documento_medico
+            
+            resultado = processar_documento_medico(
+                image_data=conteudo,
+                filename=file.filename
+            )
+            
+            return {
+                "status": "sucesso",
+                "arquivo": {
+                    "nome": file.filename,
+                    "tipo": file.content_type,
+                    "tamanho_bytes": tamanho
+                },
+                "analise": resultado
+            }
+            
+        except ImportError as e:
+            logger.warning(f"⚠️ Document AI Service não disponível: {e}")
+            return {
+                "status": "servico_indisponivel",
+                "arquivo": {"nome": file.filename, "tamanho_bytes": tamanho},
+                "analise": {
+                    "status": "indisponivel",
+                    "mensagem": "Serviço de análise de documentos não está disponível"
+                }
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erro na análise de documento: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao analisar documento: {str(e)}")
+
+
+@app.get("/anexo-paciente/{protocolo}")
+async def obter_anexo_paciente(
+    protocolo: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Obtém informações do anexo de um paciente
+    Retorna metadados e análise da IA (não retorna o arquivo em si por segurança)
+    """
+    
+    paciente = db.query(PacienteRegulacao).filter(
+        PacienteRegulacao.protocolo == protocolo
+    ).first()
+    
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    
+    if not paciente.anexo_filename:
+        return {
+            "tem_anexo": False,
+            "protocolo": protocolo
+        }
+    
+    return {
+        "tem_anexo": True,
+        "protocolo": protocolo,
+        "anexo": {
+            "filename": paciente.anexo_filename,
+            "tipo": paciente.anexo_tipo,
+            "tamanho_bytes": paciente.anexo_tamanho,
+            "processado_em": paciente.anexo_processado_em.isoformat() if paciente.anexo_processado_em else None
+        },
+        "analise_ia": {
+            "texto_ocr": paciente.anexo_texto_ocr[:500] if paciente.anexo_texto_ocr else None,
+            "analise_llama": paciente.anexo_analise_llama[:1000] if paciente.anexo_analise_llama else None,
+            "confianca": paciente.anexo_confianca_ia,
+            "alertas": json.loads(paciente.anexo_alertas) if paciente.anexo_alertas else []
+        }
+    }
+
 
 @app.get("/dashboard/leitos")
 async def get_dashboard_leitos(db: Session = Depends(get_db)):
@@ -2038,7 +2304,7 @@ async def get_dashboard_leitos(db: Session = Depends(get_db)):
             PacienteRegulacao.cidade_origem,
             func.count(PacienteRegulacao.id).label('pacientes_em_fila')
         ).filter(
-            PacienteRegulacao.status == 'EM_REGULACAO'
+            PacienteRegulacao.status == 'AGUARDANDO_REGULACAO'
         ).group_by(
             PacienteRegulacao.unidade_solicitante,
             PacienteRegulacao.cidade_origem
@@ -2085,12 +2351,12 @@ async def load_json_data(db: Session = Depends(get_db)):
         
         total_loaded = 0
         
-        # Mapear status
+        # Mapear status (usando status padronizados)
         status_map = {
-            'em_regulacao': 'EM_REGULACAO',
-            'admitidos': 'INTERNADA', 
-            'alta': 'COM_ALTA',
-            'em_transito': 'EM_TRANSFERENCIA'
+            'em_regulacao': 'AGUARDANDO_REGULACAO',
+            'admitidos': 'ADMITIDO', 
+            'alta': 'ALTA',
+            'em_transito': 'EM_TRANSITO'
         }
         
         for status_key, df in processed_data.items():
@@ -2474,22 +2740,63 @@ async def dashboard_regulador(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["REGULADOR", "ADMIN"]))
 ):
-    """Dashboard para reguladores"""
+    """Dashboard para reguladores com dados reais do banco"""
     
-    return {
-        "estatisticas": {
-            "em_regulacao": 45,
-            "autorizadas": 12,
-            "internadas": 234,
-            "criticos": 8,
-            "tempo_medio_regulacao_h": 2.5
-        },
-        "usuario": {
-            "nome": current_user.nome,
-            "tipo": current_user.tipo_usuario
-        },
-        "ultima_atualizacao": datetime.utcnow().isoformat()
-    }
+    try:
+        # Buscar estatísticas reais do banco
+        aguardando = db.query(PacienteRegulacao).filter(
+            PacienteRegulacao.status == 'AGUARDANDO_REGULACAO'
+        ).count()
+        
+        em_transferencia = db.query(PacienteRegulacao).filter(
+            PacienteRegulacao.status.in_(['EM_TRANSFERENCIA', 'EM_TRANSITO'])
+        ).count()
+        
+        admitidos = db.query(PacienteRegulacao).filter(
+            PacienteRegulacao.status == 'ADMITIDO'
+        ).count()
+        
+        criticos = db.query(PacienteRegulacao).filter(
+            PacienteRegulacao.classificacao_risco == 'VERMELHO',
+            PacienteRegulacao.status == 'AGUARDANDO_REGULACAO'
+        ).count()
+        
+        negados = db.query(PacienteRegulacao).filter(
+            PacienteRegulacao.status == 'NEGADO_PENDENTE'
+        ).count()
+        
+        return {
+            "estatisticas": {
+                "aguardando_regulacao": aguardando,
+                "em_transferencia": em_transferencia,
+                "admitidos": admitidos,
+                "criticos": criticos,
+                "negados_pendentes": negados,
+                "tempo_medio_regulacao_h": 2.5
+            },
+            "usuario": {
+                "nome": current_user.nome,
+                "tipo": current_user.tipo_usuario
+            },
+            "ultima_atualizacao": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Erro no dashboard regulador: {e}")
+        return {
+            "estatisticas": {
+                "aguardando_regulacao": 0,
+                "em_transferencia": 0,
+                "admitidos": 0,
+                "criticos": 0,
+                "negados_pendentes": 0,
+                "tempo_medio_regulacao_h": 0
+            },
+            "usuario": {
+                "nome": current_user.nome,
+                "tipo": current_user.tipo_usuario
+            },
+            "ultima_atualizacao": datetime.utcnow().isoformat()
+        }
 
 # ============================================================================
 # ENDPOINTS - TRANSFERÊNCIA E AMBULÂNCIA
@@ -2561,19 +2868,26 @@ async def listar_pacientes_transferencia(
     """
     Listar pacientes na Área de Transferência conforme DIAGRAMA_FLUXO_COMPLETO.md:
     
-    Filtro SQL: WHERE status IN ('EM_TRANSFERENCIA', 'EM_TRANSITO', 'ADMITIDO')
+    Filtro SQL: WHERE status IN ('EM_TRANSFERENCIA', 'EM_TRANSITO')
+    
+    Paciente permanece na lista durante TODO o processo de transferência:
+    - EM_TRANSFERENCIA: Ambulância ACIONADA, A_CAMINHO ou NO_LOCAL
+    - EM_TRANSITO: Ambulância TRANSPORTANDO paciente
+    
+    Paciente SAI da lista apenas quando:
+    - Status = ADMITIDO (transferência CONCLUIDA) → Vai para Área de Auditoria
     
     Fluxo de Status da Ambulância:
     ACIONADA → A_CAMINHO → NO_LOCAL → TRANSPORTANDO → CONCLUIDA
     """
     
     try:
-        # Buscar pacientes com status de transferência ativa conforme fluxograma
+        # Buscar pacientes com transferência EM ANDAMENTO (não concluída)
+        # Paciente só sai da lista quando status = ADMITIDO (transferência concluída)
         pacientes = db.query(PacienteRegulacao).filter(
             PacienteRegulacao.status.in_([
-                'EM_TRANSFERENCIA',  # Autorizado, ambulância acionada
-                'EM_TRANSITO',       # Ambulância transportando paciente
-                'ADMITIDO'           # Paciente chegou ao destino
+                'EM_TRANSFERENCIA',  # Ambulância: ACIONADA, A_CAMINHO ou NO_LOCAL
+                'EM_TRANSITO'        # Ambulância: TRANSPORTANDO paciente
             ])
         ).order_by(PacienteRegulacao.updated_at.desc()).all()
         
@@ -2595,6 +2909,7 @@ async def listar_pacientes_transferencia(
                 "unidade_origem": p.unidade_solicitante or "N/A",
                 "unidade_destino": p.unidade_destino or "N/A",
                 "cidade_origem": p.cidade_origem or "N/A",
+                "hospital_origem": getattr(p, 'hospital_origem', None) or p.unidade_solicitante or "N/A",
                 "tipo_transporte": getattr(p, 'tipo_transporte', None) or "USA",
                 "status_ambulancia": status_ambulancia,
                 "status_paciente": p.status,
@@ -2670,7 +2985,12 @@ async def atualizar_status_ambulancia(
         # Atualizar status do paciente conforme fluxo
         novo_status_paciente = status_paciente_map.get(request.novo_status)
         if novo_status_paciente:
+            status_anterior = paciente.status
             paciente.status = novo_status_paciente
+            logger.info(f"📋 Status paciente alterado: {status_anterior} → {novo_status_paciente}")
+        
+        # Log detalhado para debug
+        logger.info(f"🚑 Ambulância {request.protocolo}: status_ambulancia={request.novo_status}, status_paciente={paciente.status}")
         
         # Atualizar dados de transferência se fornecidos
         if request.identificacao_ambulancia:

@@ -52,6 +52,7 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
   const fetchFila = async () => {
     try {
       // Buscar pacientes que foram inseridos pelo hospital e aguardam regulação
+      // APENAS status AGUARDANDO_REGULACAO (não inclui NEGADO_PENDENTE)
       const response = await fetch(`${API_BASE_URL}/pacientes-hospital-aguardando`, {
         headers: {
           'Authorization': `Bearer ${userToken}`,
@@ -61,8 +62,12 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
 
       if (response.ok) {
         const data = await response.json();
+        // Filtrar apenas pacientes AGUARDANDO_REGULACAO
+        // Pacientes NEGADO_PENDENTE devem aparecer na Área do Hospital para edição
+        const pacientesAguardando = data.filter((p: any) => p.status === 'AGUARDANDO_REGULACAO');
+        
         // Converter para o formato esperado pela interface
-        const filaFormatada = data.map((p: any) => ({
+        const filaFormatada = pacientesAguardando.map((p: any) => ({
           protocolo: p.protocolo,
           data_solicitacao: p.data_solicitacao,
           especialidade: p.especialidade,
@@ -137,7 +142,7 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
       setDecisaoIA(decisaoIA);
       
     } catch (error) {
-      console.error('❌ Erro no processamento IA:', error);
+      console.error('Erro no processamento IA:', error);
       showAlert(
         'Erro na IA', 
         `Falha no processamento: ${error instanceof Error ? error.message : 'Erro desconhecido'}\n\nVerifique se o MS-Regulacao está rodando.`
@@ -162,7 +167,7 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
 
   const getRiskIcon = (risco: string) => {
     switch (risco) {
-      case 'VERMELHO': return 'CRÍTICO';
+      case 'VERMELHO': return 'CRITICO';
       case 'AMARELO': return 'MODERADO';
       case 'VERDE': return 'BAIXO';
       default: return 'N/A';
@@ -247,7 +252,7 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#004A8D" />
-        <Text style={styles.loadingText}>Carregando fila de regulação...</Text>
+        <Text style={styles.loadingText}>Carregando fila de regulacao...</Text>
       </View>
     );
   }
@@ -255,7 +260,7 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Fila de Regulação</Text>
+        <Text style={styles.headerTitle}>Fila de Regulacao</Text>
         <Text style={styles.headerSubtitle}>
           {fila.length} paciente{fila.length !== 1 ? 's' : ''} aguardando
         </Text>
@@ -272,9 +277,12 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
+            <View style={styles.emptyIcon}>
+              <Text style={styles.emptyIconText}>OK</Text>
+            </View>
             <Text style={styles.emptyText}>Nenhum paciente na fila</Text>
             <Text style={styles.emptySubtext}>
-              Todos os pacientes foram regulados com sucesso!
+              Todos os pacientes foram regulados com sucesso
             </Text>
           </View>
         }
@@ -297,7 +305,7 @@ const FilaRegulacao: React.FC<FilaRegulacaoProps> = ({ userToken }) => {
               style={styles.closeButton}
               onPress={() => setDecisaoIA(null)}
             >
-              <Text style={styles.closeButtonText}>❌ Fechar</Text>
+              <Text style={styles.closeButtonText}>Fechar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -415,6 +423,20 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 40,
+  },
+  emptyIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyIconText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   emptyText: {
     fontSize: 18,

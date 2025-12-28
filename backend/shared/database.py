@@ -42,6 +42,29 @@ class PacienteRegulacao(Base):
     telefone_contato = Column(String, nullable=True)  # Telefone para contato
     data_nascimento = Column(DateTime, nullable=True)  # Data de nascimento
     
+    # ============================================================================
+    # HOSPITAL DE ORIGEM - Para cálculo de distância entre hospitais
+    # ============================================================================
+    hospital_origem = Column(String, nullable=True)  # Nome do hospital de origem do paciente
+    
+    # ============================================================================
+    # ANEXOS E DOCUMENTOS MÉDICOS (Imagens, PDFs, Fotos de prontuário)
+    # Análise por IA: OCR + BioBERT + Llama
+    # ============================================================================
+    anexo_filename = Column(String, nullable=True)  # Nome do arquivo original
+    anexo_tipo = Column(String, nullable=True)  # MIME type (image/jpeg, application/pdf)
+    anexo_tamanho = Column(Integer, nullable=True)  # Tamanho em bytes
+    anexo_base64 = Column(Text, nullable=True)  # Conteúdo em base64 (para imagens pequenas)
+    anexo_path = Column(String, nullable=True)  # Caminho no storage (para arquivos grandes)
+    
+    # Resultados da análise de IA do anexo
+    anexo_texto_ocr = Column(Text, nullable=True)  # Texto extraído por OCR
+    anexo_analise_biobert = Column(Text, nullable=True)  # JSON da análise BioBERT
+    anexo_analise_llama = Column(Text, nullable=True)  # Análise contextual do Llama
+    anexo_confianca_ia = Column(Float, nullable=True)  # Score de confiança geral (0-1)
+    anexo_alertas = Column(Text, nullable=True)  # JSON com alertas detectados
+    anexo_processado_em = Column(DateTime, nullable=True)  # Timestamp do processamento
+    
     # Campos adicionais para área hospitalar
     cid = Column(String, nullable=True)
     cid_desc = Column(String, nullable=True)

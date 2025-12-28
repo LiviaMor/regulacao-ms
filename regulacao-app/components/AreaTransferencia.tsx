@@ -1,15 +1,20 @@
 /**
- * ÁREA DE TRANSFERÊNCIA - PAIC-REGULA
+ * AREA DE TRANSFERENCIA - PAIC-REGULA
  * 
  * Conforme DIAGRAMA_FLUXO_COMPLETO.md:
  * 
  * Paciente APROVADO aparece aqui automaticamente
- * Filtro SQL: WHERE status IN ('EM_TRANSFERENCIA', 'EM_TRANSITO', 'ADMITIDO')
+ * Filtro SQL: WHERE status IN ('EM_TRANSFERENCIA', 'EM_TRANSITO')
  * 
- * Fluxo de Status da Ambulância:
- * ACIONADA → A_CAMINHO → NO_LOCAL → TRANSPORTANDO → CONCLUIDA
+ * Paciente permanece na lista durante TODO o processo de transferencia:
+ * - EM_TRANSFERENCIA: Ambulancia ACIONADA, A_CAMINHO ou NO_LOCAL
+ * - EM_TRANSITO: Ambulancia TRANSPORTANDO paciente
  * 
- * Quando CONCLUIDA: Paciente status = ADMITIDO
+ * Paciente SAI da lista apenas quando:
+ * - Status = ADMITIDO (transferencia CONCLUIDA) -> Vai para Area de Auditoria
+ * 
+ * Fluxo de Status da Ambulancia:
+ * ACIONADA -> A_CAMINHO -> NO_LOCAL -> TRANSPORTANDO -> CONCLUIDA
  */
 
 import React, { useState, useEffect } from 'react';
@@ -25,7 +30,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 
-// Helper para alerts compatíveis com web
+// Helper para alerts compativeis com web
 const showAlert = (title: string, message: string) => {
   if (Platform.OS === 'web') {
     window.alert(`${title}\n\n${message}`);
@@ -34,7 +39,7 @@ const showAlert = (title: string, message: string) => {
   }
 };
 
-// Configuração da API baseada na plataforma
+// Configuracao da API baseada na plataforma
 const API_BASE_URL = Platform.select({
   web: 'http://localhost:8000',
   default: 'http://10.0.2.2:8000'
@@ -47,13 +52,15 @@ interface PacienteTransferencia {
   unidade_origem: string;
   unidade_destino: string;
   cidade_origem: string;
-  tipo_transporte: 'USA' | 'USB' | 'AEROMÉDICO';
-  // Status conforme fluxograma: ACIONADA → A_CAMINHO → NO_LOCAL → TRANSPORTANDO → CONCLUIDA
+  hospital_origem?: string;
+  tipo_transporte: 'USA' | 'USB' | 'AEROMEDICO';
   status_ambulancia: 'ACIONADA' | 'A_CAMINHO' | 'NO_LOCAL' | 'TRANSPORTANDO' | 'CONCLUIDA';
   status_paciente: string;
   classificacao_risco: 'VERMELHO' | 'AMARELO' | 'VERDE';
   observacoes?: string;
   data_solicitacao_ambulancia?: string;
+  distancia_km?: number;
+  tempo_estimado_min?: number;
 }
 
 interface AreaTransferenciaProps {
@@ -82,8 +89,8 @@ const AreaTransferencia: React.FC<AreaTransferenciaProps> = ({ userToken }) => {
         throw new Error('Erro ao buscar pacientes');
       }
     } catch (error) {
-      console.error('Erro ao buscar pacientes em transferência:', error);
-      showAlert('Erro', 'Não foi possível carregar os pacientes em transferência');
+      console.error('Erro ao buscar pacientes em transferencia:', error);
+      showAlert('Erro', 'Nao foi possivel carregar os pacientes em transferencia');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -95,8 +102,8 @@ const AreaTransferencia: React.FC<AreaTransferenciaProps> = ({ userToken }) => {
     fetchPacientesTransferencia();
   };
 
-  // Atualizar status da ambulância conforme fluxo:
-  // ACIONADA → A_CAMINHO → NO_LOCAL → TRANSPORTANDO → CONCLUIDA
+  // Atualizar status da ambulancia conforme fluxo:
+  // ACIONADA -> A_CAMINHO -> NO_LOCAL -> TRANSPORTANDO -> CONCLUIDA
   const atualizarStatusAmbulancia = async (protocolo: string, novoStatus: string) => {
     try {
       setProcessando(protocolo);
@@ -123,27 +130,26 @@ const AreaTransferencia: React.FC<AreaTransferenciaProps> = ({ userToken }) => {
       }
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
-      showAlert('Erro', error instanceof Error ? error.message : 'Não foi possível atualizar status');
+      showAlert('Erro', error instanceof Error ? error.message : 'Nao foi possivel atualizar status');
     } finally {
       setProcessando(null);
     }
   };
 
   const handleAtualizarStatus = (paciente: PacienteTransferencia) => {
-    // Checkpoints do fluxo de transferência conforme DIAGRAMA_FLUXO_COMPLETO.md
-    // ACIONADA → A_CAMINHO → NO_LOCAL → TRANSPORTANDO → CONCLUIDA
+    // Checkpoints do fluxo de transferencia conforme DIAGRAMA_FLUXO_COMPLETO.md
     const statusOptions = ['A_CAMINHO', 'NO_LOCAL', 'TRANSPORTANDO', 'CONCLUIDA'];
     const statusLabels: Record<string, string> = {
-      'A_CAMINHO': '🚗 Ambulância a Caminho',
-      'NO_LOCAL': '📍 Chegou no Hospital Origem',
-      'TRANSPORTANDO': '🏥 Paciente em Transporte',
-      'CONCLUIDA': '✅ Entregue no Destino (ADMITIDO)'
+      'A_CAMINHO': 'Ambulancia a Caminho',
+      'NO_LOCAL': 'Chegou no Hospital Origem',
+      'TRANSPORTANDO': 'Paciente em Transporte',
+      'CONCLUIDA': 'Entregue no Destino (ADMITIDO)'
     };
     
     if (Platform.OS === 'web') {
       const opcoes = statusOptions.map((s, i) => `${i + 1}. ${statusLabels[s]}`).join('\n');
       const escolha = window.prompt(
-        `Atualizar Status da Ambulância:\n\nFluxo: ACIONADA → A_CAMINHO → NO_LOCAL → TRANSPORTANDO → CONCLUIDA\n\n${opcoes}\n\nDigite o número:`
+        `Atualizar Status da Ambulancia:\n\nFluxo: ACIONADA > A_CAMINHO > NO_LOCAL > TRANSPORTANDO > CONCLUIDA\n\n${opcoes}\n\nDigite o numero:`
       );
       
       if (escolha) {
@@ -160,7 +166,7 @@ const AreaTransferencia: React.FC<AreaTransferenciaProps> = ({ userToken }) => {
       buttons.push({ text: 'Cancelar', onPress: async () => {} });
       
       Alert.alert(
-        'Atualizar Status da Ambulância',
+        'Atualizar Status da Ambulancia',
         'Selecione o novo status:',
         buttons
       );
@@ -181,34 +187,32 @@ const AreaTransferencia: React.FC<AreaTransferenciaProps> = ({ userToken }) => {
   };
 
   const getStatusColor = (status: string) => {
-    // Cores conforme fluxograma: ACIONADA → A_CAMINHO → NO_LOCAL → TRANSPORTANDO → CONCLUIDA
     switch (status) {
-      case 'ACIONADA': return '#FF9800';      // Laranja - Ambulância acionada
-      case 'A_CAMINHO': return '#2196F3';     // Azul - A caminho
-      case 'NO_LOCAL': return '#9C27B0';      // Roxo - Chegou no hospital origem
-      case 'TRANSPORTANDO': return '#FF5722'; // Laranja escuro - Em transporte
-      case 'CONCLUIDA': return '#1B5E20';     // Verde escuro - Entregue no destino
+      case 'ACIONADA': return '#FF9800';
+      case 'A_CAMINHO': return '#2196F3';
+      case 'NO_LOCAL': return '#9C27B0';
+      case 'TRANSPORTANDO': return '#FF5722';
+      case 'CONCLUIDA': return '#1B5E20';
       default: return '#666';
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    // Status conforme fluxograma do DIAGRAMA_FLUXO_COMPLETO.md
+  const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'ACIONADA': return '🚑 AMBULÂNCIA ACIONADA';
-      case 'A_CAMINHO': return '🚗 AMBULÂNCIA A CAMINHO';
-      case 'NO_LOCAL': return '📍 CHEGOU NO HOSPITAL ORIGEM';
-      case 'TRANSPORTANDO': return '🏥 PACIENTE EM TRANSPORTE';
-      case 'CONCLUIDA': return '✅ ENTREGUE NO DESTINO';
+      case 'ACIONADA': return 'AMBULANCIA ACIONADA';
+      case 'A_CAMINHO': return 'AMBULANCIA A CAMINHO';
+      case 'NO_LOCAL': return 'CHEGOU NO HOSPITAL ORIGEM';
+      case 'TRANSPORTANDO': return 'PACIENTE EM TRANSPORTE';
+      case 'CONCLUIDA': return 'ENTREGUE NO DESTINO';
       default: return status;
     }
   };
 
-  const getTransportIcon = (tipo: string) => {
+  const getTransportLabel = (tipo: string) => {
     switch (tipo) {
-      case 'USA': return '🚑 USA';
-      case 'USB': return '🚐 USB';
-      case 'AEROMÉDICO': return '🚁 AEROMÉDICO';
+      case 'USA': return 'USA - Suporte Avancado';
+      case 'USB': return 'USB - Suporte Basico';
+      case 'AEROMEDICO': return 'Aeromedico';
       default: return tipo;
     }
   };
@@ -260,23 +264,32 @@ const AreaTransferencia: React.FC<AreaTransferenciaProps> = ({ userToken }) => {
           </View>
         </View>
 
-        {/* Status da ambulância */}
+        {/* Status da ambulancia */}
         <View style={[
           styles.statusContainer,
           { backgroundColor: getStatusColor(item.status_ambulancia) }
         ]}>
           <Text style={styles.statusText}>
-            {getStatusIcon(item.status_ambulancia)}
+            {getStatusLabel(item.status_ambulancia)}
           </Text>
           <Text style={styles.tempoDecorrido}>
             {getTempoDecorrido(item.data_autorizacao)}
           </Text>
         </View>
 
-        {/* Informações do transporte */}
+        {/* Informacoes do transporte */}
         <View style={styles.transporteInfo}>
+          {item.hospital_origem && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Hospital Origem:</Text>
+              <Text style={styles.infoValue} numberOfLines={2}>
+                {item.hospital_origem}
+              </Text>
+            </View>
+          )}
+          
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Origem:</Text>
+            <Text style={styles.infoLabel}>Unidade Origem:</Text>
             <Text style={styles.infoValue} numberOfLines={2}>
               {item.unidade_origem}
             </Text>
@@ -292,7 +305,7 @@ const AreaTransferencia: React.FC<AreaTransferenciaProps> = ({ userToken }) => {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Transporte:</Text>
             <Text style={styles.infoValue}>
-              {getTransportIcon(item.tipo_transporte)}
+              {getTransportLabel(item.tipo_transporte)}
             </Text>
           </View>
           
@@ -300,6 +313,20 @@ const AreaTransferencia: React.FC<AreaTransferenciaProps> = ({ userToken }) => {
             <Text style={styles.infoLabel}>Especialidade:</Text>
             <Text style={styles.infoValue}>{item.especialidade}</Text>
           </View>
+
+          {item.distancia_km && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Distancia:</Text>
+              <Text style={styles.infoValue}>{item.distancia_km.toFixed(1)} km</Text>
+            </View>
+          )}
+
+          {item.tempo_estimado_min && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Tempo Estimado:</Text>
+              <Text style={styles.infoValue}>{item.tempo_estimado_min} min</Text>
+            </View>
+          )}
           
           {item.data_solicitacao_ambulancia && (
             <View style={styles.infoRow}>
@@ -311,10 +338,8 @@ const AreaTransferencia: React.FC<AreaTransferenciaProps> = ({ userToken }) => {
           )}
         </View>
 
-        {/* Botões de ação */}
+        {/* Botoes de acao */}
         <View style={styles.actionButtons}>
-          {/* Ambulância já é ACIONADA automaticamente na autorização */}
-          {/* Botão para atualizar status conforme fluxo: A_CAMINHO → NO_LOCAL → TRANSPORTANDO → CONCLUIDA */}
           {item.status_ambulancia !== 'CONCLUIDA' && (
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: '#2196F3' }]}
@@ -324,14 +349,14 @@ const AreaTransferencia: React.FC<AreaTransferenciaProps> = ({ userToken }) => {
               {isProcessando ? (
                 <ActivityIndicator color="#FFF" size="small" />
               ) : (
-                <Text style={styles.actionButtonText}>📍 Atualizar Status</Text>
+                <Text style={styles.actionButtonText}>Atualizar Status</Text>
               )}
             </TouchableOpacity>
           )}
           
           {item.status_ambulancia === 'CONCLUIDA' && (
             <View style={[styles.actionButton, { backgroundColor: '#1B5E20', opacity: 0.9 }]}>
-              <Text style={styles.actionButtonText}>✓ Paciente ADMITIDO</Text>
+              <Text style={styles.actionButtonText}>Paciente ADMITIDO</Text>
             </View>
           )}
         </View>
@@ -343,7 +368,7 @@ const AreaTransferencia: React.FC<AreaTransferenciaProps> = ({ userToken }) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#004A8D" />
-        <Text style={styles.loadingText}>Carregando transferências...</Text>
+        <Text style={styles.loadingText}>Carregando transferencias...</Text>
       </View>
     );
   }
@@ -351,9 +376,9 @@ const AreaTransferencia: React.FC<AreaTransferenciaProps> = ({ userToken }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Área de Transferência</Text>
+        <Text style={styles.headerTitle}>Area de Transferencia</Text>
         <Text style={styles.headerSubtitle}>
-          {pacientes.length} paciente{pacientes.length !== 1 ? 's' : ''} em transferência
+          {pacientes.length} paciente{pacientes.length !== 1 ? 's' : ''} em transferencia
         </Text>
       </View>
 
@@ -368,9 +393,12 @@ const AreaTransferencia: React.FC<AreaTransferenciaProps> = ({ userToken }) => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Nenhuma transferência em andamento</Text>
+            <View style={styles.emptyIcon}>
+              <Text style={styles.emptyIconText}>OK</Text>
+            </View>
+            <Text style={styles.emptyText}>Nenhuma transferencia em andamento</Text>
             <Text style={styles.emptySubtext}>
-              Todas as transferências foram concluídas!
+              Todas as transferencias foram concluidas
             </Text>
           </View>
         }
@@ -469,7 +497,7 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 12,
     color: '#666',
-    width: 80,
+    width: 100,
     marginRight: 8,
   },
   infoValue: {
@@ -508,6 +536,20 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 40,
+  },
+  emptyIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyIconText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   emptyText: {
     fontSize: 18,

@@ -182,7 +182,7 @@ const AreaAuditoria: React.FC<AreaAuditoriaProps> = ({ userToken }) => {
 
         {/* Status ADMITIDO */}
         <View style={styles.statusContainer}>
-          <Text style={styles.statusText}>🏥 ADMITIDO - Aguardando Alta</Text>
+          <Text style={styles.statusText}>ADMITIDO - Aguardando Alta</Text>
           <Text style={styles.tempoInternacao}>
             {item.tempo_total_horas ? `${item.tempo_total_horas}h internado` : 'N/A'}
           </Text>
@@ -231,7 +231,7 @@ const AreaAuditoria: React.FC<AreaAuditoriaProps> = ({ userToken }) => {
           {isProcessando ? (
             <ActivityIndicator color="#FFF" size="small" />
           ) : (
-            <Text style={styles.altaButtonText}>📋 Registrar Alta Hospitalar</Text>
+            <Text style={styles.altaButtonText}>Registrar Alta Hospitalar</Text>
           )}
         </TouchableOpacity>
       </View>

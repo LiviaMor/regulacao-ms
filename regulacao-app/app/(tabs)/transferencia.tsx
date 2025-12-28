@@ -94,23 +94,23 @@ export default function TransferenciaScreen() {
       <View style={styles.container}>
         <View style={styles.loginContainer}>
           <View style={styles.loginHeader}>
-            <Text style={styles.loginTitle}>🚑 Área de Transferência</Text>
+            <Text style={styles.loginTitle}>Area de Transferencia</Text>
             <Text style={styles.loginSubtitle}>
-              Gestão de Ambulâncias e Transferências
+              Gestao de Ambulancias e Transferencias
             </Text>
           </View>
 
           <View style={styles.loginCard}>
             <Text style={styles.loginCardTitle}>Acesso Restrito</Text>
             <Text style={styles.loginCardText}>
-              Esta área é destinada para gestão de transferências e 
-              solicitação de ambulâncias.
+              Esta area e destinada para gestao de transferencias e 
+              solicitacao de ambulancias.
             </Text>
 
             <View style={styles.credentialsInfo}>
-              <Text style={styles.credentialsTitle}>Credenciais de Demonstração:</Text>
-              <Text style={styles.credentialsText}>📧 admin@sesgo.gov.br</Text>
-              <Text style={styles.credentialsText}>🔐 admin123</Text>
+              <Text style={styles.credentialsTitle}>Credenciais de Demonstracao:</Text>
+              <Text style={styles.credentialsText}>Email: admin@sesgo.gov.br</Text>
+              <Text style={styles.credentialsText}>Senha: admin123</Text>
             </View>
 
             <TouchableOpacity 
@@ -122,13 +122,13 @@ export default function TransferenciaScreen() {
                 <ActivityIndicator color="#FFF" />
               ) : (
                 <Text style={styles.loginButtonText}>
-                  🔐 Entrar no Sistema
+                  Entrar no Sistema
                 </Text>
               )}
             </TouchableOpacity>
 
             <Text style={styles.disclaimer}>
-              ⚠️ Em produção, utilize suas credenciais oficiais da SES-GO
+              Em producao, utilize suas credenciais oficiais da SES-GO
             </Text>
           </View>
         </View>
@@ -142,7 +142,7 @@ export default function TransferenciaScreen() {
       {/* Header com informações do usuário */}
       <View style={styles.userHeader}>
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>👨‍⚕️ {userInfo?.nome}</Text>
+          <Text style={styles.userName}>{userInfo?.nome}</Text>
           <Text style={styles.userRole}>{userInfo?.tipo_usuario}</Text>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={logout}>

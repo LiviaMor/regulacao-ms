@@ -466,7 +466,7 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
         {ambulancia && (
           <View style={styles.infoAmbulancia}>
             <Text style={styles.infoAmbulanciaText}>
-              🚑 Ambulância {ambulancia.tipo} será acionada automaticamente ao AUTORIZAR ou ALTERAR
+              Ambulancia {ambulancia.tipo} sera acionada automaticamente ao AUTORIZAR ou ALTERAR
             </Text>
           </View>
         )}
@@ -602,9 +602,8 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
-                <Text style={styles.botaoDecisaoIcon}>✅</Text>
                 <Text style={[styles.botaoDecisaoText, isSmallScreen && { fontSize: 12 }]}>AUTORIZAR</Text>
-                <Text style={styles.botaoDecisaoSubtext}>Chama Ambulância</Text>
+                <Text style={styles.botaoDecisaoSubtext}>Chama Ambulancia</Text>
               </>
             )}
           </TouchableOpacity>
@@ -618,7 +617,6 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
-                <Text style={styles.botaoDecisaoIcon}>❌</Text>
                 <Text style={[styles.botaoDecisaoText, isSmallScreen && { fontSize: 12 }]}>NEGAR</Text>
                 <Text style={styles.botaoDecisaoSubtext}>Volta p/ Hospital</Text>
               </>
@@ -634,7 +632,6 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
-                <Text style={styles.botaoDecisaoIcon}>✏️</Text>
                 <Text style={[styles.botaoDecisaoText, isSmallScreen && { fontSize: 12 }]}>ALTERAR</Text>
                 <Text style={styles.botaoDecisaoSubtext}>Muda Hospital</Text>
               </>
@@ -645,13 +642,13 @@ const CardDecisaoIA: React.FC<CardDecisaoIAProps> = ({
         {/* Legenda do fluxo */}
         <View style={styles.legendaFluxo}>
           <Text style={styles.legendaText}>
-            ✅ Autorizar: Aceita sugestão e aciona ambulância
+            Autorizar: Aceita sugestao e aciona ambulancia
           </Text>
           <Text style={styles.legendaText}>
-            ❌ Negar: Paciente retorna ao hospital de origem
+            Negar: Paciente retorna ao hospital de origem
           </Text>
           <Text style={styles.legendaText}>
-            ✏️ Alterar: Muda hospital destino e aciona ambulância
+            Alterar: Muda hospital destino e aciona ambulancia
           </Text>
         </View>
 

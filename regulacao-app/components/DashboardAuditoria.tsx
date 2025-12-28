@@ -83,7 +83,9 @@ interface TransparenciaItemProps {
 
 const TransparenciaItem: React.FC<TransparenciaItemProps> = ({ label, ativo }) => (
   <View style={styles.transparenciaItem}>
-    <Text style={styles.transparenciaIcone}>{ativo ? '✅' : '❌'}</Text>
+    <View style={[styles.transparenciaIcone, { backgroundColor: ativo ? Colors.success : Colors.danger }]}>
+      <Text style={styles.transparenciaIconeText}>{ativo ? 'OK' : 'X'}</Text>
+    </View>
     <Text style={styles.transparenciaLabel}>{label}</Text>
   </View>
 );
@@ -231,24 +233,24 @@ const DashboardAuditoria: React.FC = () => {
     >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitulo}>📊 Dashboard de Auditoria</Text>
+        <Text style={styles.headerTitulo}>Dashboard de Auditoria</Text>
         <Text style={styles.headerSubtitulo}>
-          Transparência das Decisões da IA - PAIC-Regula
+          Transparencia das Decisoes da IA - PAIC-Regula
         </Text>
         <View style={styles.badgeContainer}>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>🔓 Acesso Público</Text>
+            <Text style={styles.badgeText}>Acesso Publico</Text>
           </View>
           <View style={[styles.badge, styles.badgeLGPD]}>
-            <Text style={styles.badgeText}>🛡️ LGPD Compliant</Text>
+            <Text style={styles.badgeText}>LGPD Compliant</Text>
           </View>
         </View>
       </View>
 
       {erro && (
         <View style={styles.erroContainer}>
-          <Text style={styles.erroTexto}>⚠️ {erro}</Text>
-          <Text style={styles.erroSubtexto}>Exibindo dados de demonstração</Text>
+          <Text style={styles.erroTexto}>AVISO: {erro}</Text>
+          <Text style={styles.erroSubtexto}>Exibindo dados de demonstracao</Text>
         </View>
       )}
 
@@ -256,42 +258,42 @@ const DashboardAuditoria: React.FC = () => {
         <>
           {/* Métricas Principais */}
           <View style={styles.secao}>
-            <Text style={styles.secaoTitulo}>📈 Métricas Gerais</Text>
+            <Text style={styles.secaoTitulo}>Metricas Gerais</Text>
             <View style={styles.metricasGrid}>
               <MetricaCard
-                titulo="Total de Solicitações"
+                titulo="Total de Solicitacoes"
                 valor={dados.estatisticas_gerais.total_solicitacoes.toLocaleString()}
                 subtitulo="Pacientes processados"
                 cor={Colors.primary}
-                icone="📋"
+                icone=""
               />
               <MetricaCard
-                titulo="Decisões da IA"
+                titulo="Decisoes da IA"
                 valor={dados.estatisticas_ia.total_decisoes.toLocaleString()}
-                subtitulo="Análises realizadas"
+                subtitulo="Analises realizadas"
                 cor={Colors.success}
-                icone="🤖"
+                icone=""
               />
               <MetricaCard
-                titulo="Tempo Médio IA"
+                titulo="Tempo Medio IA"
                 valor={`${dados.estatisticas_ia.tempo_medio_processamento_segundos.toFixed(2)}s`}
-                subtitulo="Por análise"
+                subtitulo="Por analise"
                 cor="#9C27B0"
-                icone="⚡"
+                icone=""
               />
               <MetricaCard
                 titulo="Disponibilidade"
                 valor={dados.estatisticas_ia.disponibilidade}
                 subtitulo="Uptime do sistema"
                 cor={Colors.success}
-                icone="✅"
+                icone=""
               />
             </View>
           </View>
 
           {/* Status dos Pacientes */}
           <View style={styles.secao}>
-            <Text style={styles.secaoTitulo}>📊 Distribuição por Status</Text>
+            <Text style={styles.secaoTitulo}>Distribuicao por Status</Text>
             <View style={styles.statusContainer}>
               {Object.entries(dados.estatisticas_gerais.por_status).map(([status, count]) => (
                 <View key={status} style={styles.statusItem}>
@@ -314,7 +316,7 @@ const DashboardAuditoria: React.FC = () => {
           {/* Pacientes Aguardando Alta (ADMITIDOS) */}
           {pacientesAuditoria.length > 0 && (
             <View style={styles.secao}>
-              <Text style={styles.secaoTitulo}>🏥 Pacientes ADMITIDOS - Aguardando Alta ({pacientesAuditoria.length})</Text>
+              <Text style={styles.secaoTitulo}>Pacientes ADMITIDOS - Aguardando Alta ({pacientesAuditoria.length})</Text>
               <View style={styles.statusContainer}>
                 {pacientesAuditoria.slice(0, 5).map((paciente: any) => (
                   <View key={paciente.protocolo} style={styles.pacienteAuditoriaItem}>
@@ -585,8 +587,17 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F0F0F0',
   },
   transparenciaIcone: {
-    fontSize: 18,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
+  },
+  transparenciaIconeText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   transparenciaLabel: {
     fontSize: 14,

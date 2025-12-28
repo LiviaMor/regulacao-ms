@@ -91,7 +91,7 @@ const HospitalCard: React.FC<HospitalCardProps> = ({
       {hospital.alerta_saturacao && (
         <View style={styles.alertBanner}>
           <Text style={styles.alertText}>
-            ⚠️ ALERTA: Saturação prevista em {hospital.previsao_saturacao_min}min
+            ALERTA: Saturacao prevista em {hospital.previsao_saturacao_min}min
           </Text>
         </View>
       )}

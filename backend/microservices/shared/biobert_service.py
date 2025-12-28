@@ -186,7 +186,14 @@ class BioBERTService:
                 "entidades": entidades_detectadas,
                 "tokens_processados": len(tokens),
                 "timestamp": datetime.utcnow().isoformat(),
-                "modelo": "dmis-lab/biobert-v1.1-pubmed"
+                "modelo": "dmis-lab/biobert-v1.1-pubmed",
+                # Informações de validação científica
+                "validacao_cientifica": {
+                    "referencia": "Lee et al. (2020) - Bioinformatics, 36(4), 1234-1240",
+                    "doi": "10.1093/bioinformatics/btz682",
+                    "dados_treinamento": "PubMed (4.5B palavras) + PMC (13.5B palavras)",
+                    "licenca": "Apache 2.0 (Open Source)"
+                }
             }
             
         except Exception as e:

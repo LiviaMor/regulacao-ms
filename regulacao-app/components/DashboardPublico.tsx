@@ -134,7 +134,9 @@ const DashboardPublico = ({ dadosLeitos: initialData }: { dadosLeitos?: UnidadeP
           
           {item.cidade && (
             <View style={styles.cidadeContainer}>
-              <Text style={styles.cidadeIcon}>📍</Text>
+              <View style={styles.locationIcon}>
+                <Text style={styles.locationIconText}>L</Text>
+              </View>
               <Text style={styles.cidadeText}>{item.cidade}</Text>
             </View>
           )}
@@ -167,11 +169,13 @@ const DashboardPublico = ({ dadosLeitos: initialData }: { dadosLeitos?: UnidadeP
           <>
             {/* Banner de Fonte de Dados */}
             <View style={styles.fonteBanner}>
-              <Text style={styles.fonteIcon}>🏛️</Text>
+              <View style={styles.fonteIconContainer}>
+                <Text style={styles.fonteIconText}>SUS</Text>
+              </View>
               <View style={styles.fonteTexto}>
-                <Text style={styles.fonteTitulo}>Dados Oficiais SUS Goiás</Text>
+                <Text style={styles.fonteTitulo}>Dados Oficiais SUS Goias</Text>
                 <Text style={styles.fonteSubtitulo}>
-                  Fonte: Portal da Transparência SES-GO
+                  Fonte: Portal da Transparencia SES-GO
                 </Text>
               </View>
               {lastUpdate && (
@@ -197,7 +201,7 @@ const DashboardPublico = ({ dadosLeitos: initialData }: { dadosLeitos?: UnidadeP
             {dadosLeitos.length > 0 && (
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>
-                  Unidades com Pressão na Regulação
+                  Unidades com Pressao na Regulacao
                 </Text>
               </View>
             )}
@@ -205,10 +209,12 @@ const DashboardPublico = ({ dadosLeitos: initialData }: { dadosLeitos?: UnidadeP
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>✅</Text>
+            <View style={styles.emptyIconContainer}>
+              <Text style={styles.emptyIconText}>OK</Text>
+            </View>
             <Text style={styles.emptyText}>Sistema Operando Normalmente</Text>
             <Text style={styles.emptySubtext}>
-              Nenhuma unidade com pressão crítica no momento
+              Nenhuma unidade com pressao critica no momento
             </Text>
           </View>
         }
@@ -337,9 +343,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  cidadeIcon: {
-    fontSize: Typography.fontSize.sm,
+  locationIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: Spacing.xs,
+  },
+  locationIconText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   cidadeText: {
     fontSize: Typography.fontSize.sm,
@@ -353,9 +369,19 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     ...Shadows.card,
   },
-  emptyIcon: {
-    fontSize: 48,
+  emptyIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Colors.success,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: Spacing.md,
+  },
+  emptyIconText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   emptyText: {
     fontSize: Typography.fontSize.lg,
@@ -381,9 +407,19 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: Colors.primary,
   },
-  fonteIcon: {
-    fontSize: 24,
+  fonteIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: Spacing.md,
+  },
+  fonteIconText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   fonteTexto: {
     flex: 1,

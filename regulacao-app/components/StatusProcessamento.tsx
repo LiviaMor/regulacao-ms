@@ -17,53 +17,53 @@ const StatusProcessamento: React.FC<StatusProcessamentoProps> = ({
   pipeline_rag = false
 }) => {
   const getStatusIcon = (usado: boolean, disponivel: boolean = true) => {
-    if (!disponivel) return '🔴';
-    return usado ? '✅' : '❌';
+    if (!disponivel) return 'X';
+    return usado ? 'OK' : '-';
   };
 
   const getStatusText = (usado: boolean, disponivel: boolean = true) => {
-    if (!disponivel) return 'Indisponível';
-    return usado ? 'Usado' : 'Não usado';
+    if (!disponivel) return 'Indisponivel';
+    return usado ? 'Usado' : 'Nao usado';
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🔧 Status do Processamento</Text>
+      <Text style={styles.title}>Status do Processamento</Text>
       
       <View style={styles.statusRow}>
-        <Text style={styles.statusLabel}>⏱️ Tempo:</Text>
+        <Text style={styles.statusLabel}>Tempo:</Text>
         <Text style={styles.statusValue}>
           {tempo_processamento > 0 ? `${tempo_processamento.toFixed(2)}s` : 'N/A'}
         </Text>
       </View>
       
       <View style={styles.statusRow}>
-        <Text style={styles.statusLabel}>🧬 BioBERT:</Text>
+        <Text style={styles.statusLabel}>BioBERT:</Text>
         <Text style={[
           styles.statusValue,
           { color: biobert_usado ? '#4CAF50' : '#FF5722' }
         ]}>
-          {getStatusIcon(biobert_usado, biobert_disponivel)} {getStatusText(biobert_usado, biobert_disponivel)}
+          [{getStatusIcon(biobert_usado, biobert_disponivel)}] {getStatusText(biobert_usado, biobert_disponivel)}
         </Text>
       </View>
       
       <View style={styles.statusRow}>
-        <Text style={styles.statusLabel}>🚑 Matchmaker:</Text>
+        <Text style={styles.statusLabel}>Matchmaker:</Text>
         <Text style={[
           styles.statusValue,
           { color: matchmaker_usado ? '#4CAF50' : '#FF5722' }
         ]}>
-          {getStatusIcon(matchmaker_usado)} {getStatusText(matchmaker_usado)}
+          [{getStatusIcon(matchmaker_usado)}] {getStatusText(matchmaker_usado)}
         </Text>
       </View>
       
       <View style={styles.statusRow}>
-        <Text style={styles.statusLabel}>🤖 Pipeline RAG:</Text>
+        <Text style={styles.statusLabel}>Pipeline RAG:</Text>
         <Text style={[
           styles.statusValue,
           { color: pipeline_rag ? '#4CAF50' : '#FF5722' }
         ]}>
-          {getStatusIcon(pipeline_rag)} {getStatusText(pipeline_rag)}
+          [{getStatusIcon(pipeline_rag)}] {getStatusText(pipeline_rag)}
         </Text>
       </View>
     </View>

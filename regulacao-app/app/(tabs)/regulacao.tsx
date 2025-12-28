@@ -94,23 +94,23 @@ export default function RegulacaoScreen() {
       <View style={styles.container}>
         <View style={styles.loginContainer}>
           <View style={styles.loginHeader}>
-            <Text style={styles.loginTitle}>🏥 Área do Regulador</Text>
+            <Text style={styles.loginTitle}>Area do Regulador</Text>
             <Text style={styles.loginSubtitle}>
-              Sistema de Regulação Autônoma SES-GO
+              Sistema de Regulacao Autonoma SES-GO
             </Text>
           </View>
 
           <View style={styles.loginCard}>
             <Text style={styles.loginCardTitle}>Acesso Restrito</Text>
             <Text style={styles.loginCardText}>
-              Esta área é destinada exclusivamente para reguladores médicos 
+              Esta area e destinada exclusivamente para reguladores medicos 
               autorizados pela SES-GO.
             </Text>
 
             <View style={styles.credentialsInfo}>
-              <Text style={styles.credentialsTitle}>Credenciais de Demonstração:</Text>
-              <Text style={styles.credentialsText}>📧 admin@sesgo.gov.br</Text>
-              <Text style={styles.credentialsText}>🔐 admin123</Text>
+              <Text style={styles.credentialsTitle}>Credenciais de Demonstracao:</Text>
+              <Text style={styles.credentialsText}>Email: admin@sesgo.gov.br</Text>
+              <Text style={styles.credentialsText}>Senha: admin123</Text>
             </View>
 
             <TouchableOpacity 
@@ -122,13 +122,13 @@ export default function RegulacaoScreen() {
                 <ActivityIndicator color="#FFF" />
               ) : (
                 <Text style={styles.loginButtonText}>
-                  🔐 Entrar como Regulador
+                  Entrar como Regulador
                 </Text>
               )}
             </TouchableOpacity>
 
             <Text style={styles.disclaimer}>
-              ⚠️ Em produção, utilize suas credenciais oficiais da SES-GO
+              Em producao, utilize suas credenciais oficiais da SES-GO
             </Text>
           </View>
         </View>
@@ -142,7 +142,7 @@ export default function RegulacaoScreen() {
       {/* Header com informações do usuário */}
       <View style={styles.userHeader}>
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>👨‍⚕️ {userInfo?.nome}</Text>
+          <Text style={styles.userName}>{userInfo?.nome}</Text>
           <Text style={styles.userRole}>{userInfo?.tipo_usuario}</Text>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={logout}>
@@ -164,17 +164,18 @@ const styles = StyleSheet.create({
   loginContainer: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
+    backgroundColor: '#F5F7FA',
   },
   loginHeader: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 30,
   },
   loginTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#004A8D',
-    textAlign: 'center',
     marginBottom: 8,
   },
   loginSubtitle: {
@@ -184,47 +185,45 @@ const styles = StyleSheet.create({
   },
   loginCard: {
     backgroundColor: '#FFF',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 24,
+    width: '100%',
+    maxWidth: 400,
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
   },
   loginCardTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-    textAlign: 'center',
     marginBottom: 12,
   },
   loginCardText: {
     fontSize: 14,
     color: '#666',
-    textAlign: 'center',
     lineHeight: 20,
     marginBottom: 20,
   },
   credentialsInfo: {
-    backgroundColor: '#F8F9FA',
-    padding: 16,
+    backgroundColor: '#E3F2FD',
     borderRadius: 8,
+    padding: 16,
     marginBottom: 20,
-    borderLeftWidth: 3,
-    borderLeftColor: '#004A8D',
   },
   credentialsTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#004A8D',
     marginBottom: 8,
   },
   credentialsText: {
-    fontSize: 13,
-    color: '#555',
-    fontFamily: 'monospace',
+    fontSize: 14,
+    color: '#004A8D',
     marginBottom: 4,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   loginButton: {
     backgroundColor: '#004A8D',
@@ -239,19 +238,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   disclaimer: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#999',
     textAlign: 'center',
     fontStyle: 'italic',
   },
   userHeader: {
-    backgroundColor: '#004A8D',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    paddingTop: 50, // Para status bar
+    padding: 16,
+    backgroundColor: '#004A8D',
+    borderBottomLeftRadius: 15,
+    borderBottomRightRadius: 15,
   },
   userInfo: {
     flex: 1,
@@ -267,14 +266,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   logoutButton: {
-    backgroundColor: '#FF5722',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
   },
   logoutButtonText: {
     color: '#FFF',
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

@@ -183,8 +183,14 @@
 │  Endpoint: GET /pacientes-transferencia                                │
 │  Auth: Bearer Token (REGULADOR/ADMIN)                                  │
 │                                                                         │
-│  Filtro SQL: WHERE status IN ('EM_TRANSFERENCIA',                     │
-│                                'EM_TRANSITO', 'ADMITIDO')              │
+│  Filtro SQL: WHERE status IN ('EM_TRANSFERENCIA', 'EM_TRANSITO')      │
+│                                                                         │
+│  Paciente permanece na lista durante TODO o processo:                  │
+│  - EM_TRANSFERENCIA: Ambulância ACIONADA, A_CAMINHO ou NO_LOCAL       │
+│  - EM_TRANSITO: Ambulância TRANSPORTANDO paciente                      │
+│                                                                         │
+│  Paciente SAI da lista apenas quando:                                  │
+│  - Status = ADMITIDO (transferência CONCLUIDA) → Área de Auditoria    │
 │                                                                         │
 │  Lista exibida:                                                        │
 │  ┌──────────────────────────────────────────────────────────┐         │
