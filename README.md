@@ -33,11 +33,15 @@ Livia Moreira Rocha - Desenvolvedora Junior - Odontóloga - Experiência em Saú
 ```
 [![LiviaMor](https://img.shields.io/badge/GitHub-LiviaMor-181717?style=flat-square&logo=github)](https://github.com/LiviaMor)
 
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-LiviaMor-0077B5?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/liviamor/)
+
 ## Equipe
 ```bash
 Sebastião Relson Reis da Luz - Desenvolvedor Sênior - Ampla Experiência em Retrieval-Augmented Generation
 ```
 [![Relson](https://img.shields.io/badge/GitHub-relson-181717?style=flat-square&logo=github)](https://github.com/relson)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Relson-0077B5?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/relson/)
+
 
 ## Visão Geral
 
