@@ -51,28 +51,59 @@ def fazer_login():
 def inserir_paciente(token):
     print_header("ETAPA 2: INSERIR PACIENTE (ÁREA HOSPITALAR)")
     
-    paciente = {
+    # Dados do paciente para IA
+    dados_paciente = {
         "protocolo": PROTOCOLO_TESTE,
-        "nome_completo": "João da Silva Santos",
-        "nome_mae": "Maria Santos Silva",
-        "cpf": "12345678901",
-        "telefone_contato": "(62) 98765-4321",
         "especialidade": "CARDIOLOGIA",
         "cid": "I21.0",
         "cid_desc": "Infarto Agudo do Miocárdio",
         "prontuario_texto": "Paciente com dor torácica intensa, sudorese, dispneia. ECG com supradesnivelamento de ST.",
         "historico_paciente": "HAS, DM tipo 2",
-        "prioridade_descricao": "URGENTE",
-        "cidade_origem": "GOIANIA",
-        "unidade_solicitante": "HOSPITAL MUNICIPAL DE GOIANIA"
+        "prioridade_descricao": "URGENTE"
     }
     
     print_info(f"Protocolo: {PROTOCOLO_TESTE}")
     
     try:
+        # Processar com IA primeiro
+        response_ia = requests.post(
+            f"{API_BASE_URL}/processar-regulacao",
+            json=dados_paciente,
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        
+        if response_ia.status_code != 200:
+            print_error(f"Falha no processamento IA: {response_ia.status_code}")
+            return False
+        
+        sugestao_ia = response_ia.json()
+        
+        # Agora salvar paciente com sugestão da IA
+        # Estrutura correta: { paciente: {...}, sugestao_ia: {...} }
+        paciente_completo = {
+            "protocolo": PROTOCOLO_TESTE,
+            "nome_completo": "João da Silva Santos",
+            "nome_mae": "Maria Santos Silva",
+            "cpf": "12345678901",
+            "telefone_contato": "(62) 98765-4321",
+            "especialidade": "CARDIOLOGIA",
+            "cid": "I21.0",
+            "cid_desc": "Infarto Agudo do Miocárdio",
+            "prontuario_texto": "Paciente com dor torácica intensa, sudorese, dispneia. ECG com supradesnivelamento de ST.",
+            "historico_paciente": "HAS, DM tipo 2",
+            "prioridade_descricao": "URGENTE",
+            "cidade_origem": "GOIANIA",
+            "unidade_solicitante": "HOSPITAL MUNICIPAL DE GOIANIA"
+        }
+        
+        request_body = {
+            "paciente": paciente_completo,
+            "sugestao_ia": sugestao_ia
+        }
+        
         response = requests.post(
-            f"{API_BASE_URL}/solicitar-regulacao",
-            json=paciente,
+            f"{API_BASE_URL}/salvar-paciente-hospital",
+            json=request_body,
             headers={"Authorization": f"Bearer {token}"}
         )
         if response.status_code == 200:
