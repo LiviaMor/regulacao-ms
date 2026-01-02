@@ -102,3 +102,5 @@ ghostdriver.log
 # Evita subir os JSONs de teste gerados localmente
 *.json
 !example_output.json # Mantém apenas um exemplo se desejar
+
+.kiro/
