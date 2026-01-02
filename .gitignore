@@ -90,3 +90,15 @@ coverage/
 
 # Cache
 .cache/
+
+# Selenium & Drivers
+# Ignora binários de drivers locais se você os baixar manualmente
+chromedriver
+geckodriver
+ghostdriver.log
+*.log
+
+# --- Scraper Data (Opcional) ---
+# Evita subir os JSONs de teste gerados localmente
+*.json
+!example_output.json # Mantém apenas um exemplo se desejar
