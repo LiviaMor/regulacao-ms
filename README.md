@@ -3,10 +3,7 @@
 
 # LIFE IA - Regulação Autônoma
 
-### Modelos de IA
-![BioBERT](https://img.shields.io/badge/🧬_BioBERT-v1.1_(60%25)-FF6F00?style=for-the-badge)
-![Llama](https://img.shields.io/badge/🦙_Llama_3-8B_(10%25)-7C3AED?style=for-the-badge)
-![Tesseract](https://img.shields.io/badge/📄_Tesseract-OCR_(30%25)-4285F4?style=for-the-badge)
+<div align="center">
 
 ### Tecnologias
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
@@ -16,26 +13,37 @@
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 
+### Modelos de IA
+![BioBERT](https://img.shields.io/badge/🧬_BioBERT-v1.1_(60%25)-FF6F00?style=for-the-badge)
+![Llama](https://img.shields.io/badge/🦙_Llama_3-8B_(10%25)-7C3AED?style=for-the-badge)
+![Tesseract](https://img.shields.io/badge/📄_Tesseract-OCR_(30%25)-4285F4?style=for-the-badge)
+
 ### Conformidade
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 ![Open Source](https://img.shields.io/badge/IA-100%25_Aberta-brightgreen?style=for-the-badge)
 ![LGPD](https://img.shields.io/badge/LGPD-Compliant-blue?style=for-the-badge)
 
+</div>
+
+---
 
 Sistema de Regulação Hospitalar Inteligente Desenvolvido para o Prêmio Goiás Aberto para IA – GO.IA - Chamada Pública FAPEG nº 34/2025 
 
-## Desenvolvido
+## Equipe
+
 **Proponente:** 
-```bash
+```
 Livia Moreira Rocha - Desenvolvedora Junior - Odontóloga - Experiência em Saúde Pública
 ```
 [![LiviaMor](https://img.shields.io/badge/GitHub-LiviaMor-181717?style=flat-square&logo=github)](https://github.com/LiviaMor)
 
-## Equipe
-```bash
+**Desenvolvedor Sênior:**
+```
 Sebastião Relson Reis da Luz - Desenvolvedor Sênior - Ampla Experiência em Retrieval-Augmented Generation
 ```
 [![Relson](https://img.shields.io/badge/GitHub-relson-181717?style=flat-square&logo=github)](https://github.com/relson)
+
+---
 
 ## Visão Geral
 
